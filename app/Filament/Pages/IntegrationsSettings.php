@@ -4,21 +4,22 @@ namespace App\Filament\Pages;
 
 use App\Models\IntegrationSetting;
 use App\Services\GoogleAnalyticsService;
-use Filament\Forms\Components\Section;
+use Filament\Actions;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 
 class IntegrationsSettings extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-puzzle-piece';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-puzzle-piece';
 
-    protected static string $view = 'filament.pages.integrations-settings';
+    protected string $view = 'filament.pages.integrations-settings';
 
-    protected static ?string $navigationGroup = 'Settings';
+    protected static \UnitEnum|string|null $navigationGroup = 'Settings';
 
     protected static ?int $navigationSort = 10;
 
@@ -41,9 +42,9 @@ class IntegrationsSettings extends Page
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Section::make('Google Analytics 4')
                     ->description('Integrate with Google Analytics 4 to send click events server-side. This provides backup analytics and can improve performance by reducing local database writes. Note: Connection testing may not work in local development environments.')
@@ -173,11 +174,11 @@ class IntegrationsSettings extends Page
     protected function getFormActions(): array
     {
         return [
-            \Filament\Actions\Action::make('save')
+            Actions\Action::make('save')
                 ->label('Save Settings')
                 ->submit('save'),
 
-            \Filament\Actions\Action::make('test_ga')
+            Actions\Action::make('test_ga')
                 ->label('Test Google Analytics')
                 ->action('testGoogleAnalytics')
                 ->color('info')

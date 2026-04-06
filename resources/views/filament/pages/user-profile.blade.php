@@ -11,7 +11,7 @@
             </x-slot>
 
             <form wire:submit="updateProfile" class="space-y-6">
-                {{ $this->getProfileForm() }}
+                {{ $this->profileForm }}
 
                 <div class="flex justify-end">
                     <x-filament::button type="submit">
@@ -32,7 +32,7 @@
             </x-slot>
 
             <form wire:submit="updatePassword" class="space-y-6">
-                {{ $this->getPasswordForm() }}
+                {{ $this->passwordForm }}
 
                 <div class="flex justify-end">
                     <x-filament::button type="submit">

@@ -7,9 +7,10 @@ use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas;
+use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Cache;
 
 class NotificationLimitsSettings extends Page implements HasForms
@@ -17,9 +18,9 @@ class NotificationLimitsSettings extends Page implements HasForms
     use HasPageShield;
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-adjustments-horizontal';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-adjustments-horizontal';
 
-    protected static string $view = 'filament.pages.notification-limits-settings';
+    protected string $view = 'filament.pages.notification-limits-settings';
 
     protected static ?string $cluster = NotificationsCluster::class;
 
@@ -42,11 +43,11 @@ class NotificationLimitsSettings extends Page implements HasForms
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Section::make('Notification Limits')
+                Schemas\Components\Section::make('Notification Limits')
                     ->description('Configure limits for health check failure notifications')
                     ->schema([
                         Forms\Components\TextInput::make('max_notifications_per_link')
@@ -72,7 +73,7 @@ class NotificationLimitsSettings extends Page implements HasForms
                             ->required(),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Health Check Settings')
+                Schemas\Components\Section::make('Health Check Settings')
                     ->description('Configure health check behavior')
                     ->schema([
                         Forms\Components\TextInput::make('check_timeout_seconds')
@@ -84,7 +85,7 @@ class NotificationLimitsSettings extends Page implements HasForms
                             ->required(),
                     ]),
 
-                Forms\Components\Section::make('Status Code Filtering')
+                Schemas\Components\Section::make('Status Code Filtering')
                     ->description('Choose which HTTP status codes should trigger notifications')
                     ->schema([
                         Forms\Components\CheckboxList::make('notify_on_status_codes')

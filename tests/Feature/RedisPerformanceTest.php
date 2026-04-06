@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Link;
 use App\Models\LinkGroup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
@@ -15,6 +16,11 @@ class RedisPerformanceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Clear Redis cache to avoid stale data from previous test runs
+        if ($this->isRedisAvailable()) {
+            Cache::store('redis')->flush();
+        }
 
         // Create a default group for links
         LinkGroup::factory()->create(['is_default' => true]);
@@ -130,7 +136,7 @@ class RedisPerformanceTest extends TestCase
         // Simulate 30 requests across 3 links (reduced to avoid rate limits)
         for ($round = 0; $round < 10; $round++) {
             foreach ($links as $link) {
-                $response = $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class)
+                $response = $this->withoutMiddleware(ThrottleRequests::class)
                     ->get('/'.$link->short_code);
                 $response->assertRedirect($link->original_url);
             }

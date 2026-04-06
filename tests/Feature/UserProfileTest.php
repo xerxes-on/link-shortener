@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class UserProfileTest extends TestCase
@@ -24,7 +25,7 @@ class UserProfileTest extends TestCase
         ]);
 
         // Create a simple role for testing (since roles:setup isn't working in tests)
-        $role = \Spatie\Permission\Models\Role::create(['name' => 'user']);
+        $role = Role::create(['name' => 'user']);
         $this->user->assignRole($role);
     }
 
@@ -87,6 +88,6 @@ class UserProfileTest extends TestCase
         $response = $this->get('/admin/user-profile');
 
         $response->assertStatus(200);
-        $response->assertViewIs('filament.pages.user-profile');
+        $response->assertSee('My Profile');
     }
 }

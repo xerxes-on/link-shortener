@@ -3,9 +3,11 @@
 namespace App\Filament\Resources\LinkResource\RelationManagers;
 
 use App\Services\GeolocationService;
+use Filament\Actions;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -15,13 +17,13 @@ class GeoRulesRelationManager extends RelationManager
 
     protected static ?string $title = 'Geo-Targeting Rules';
 
-    protected static ?string $icon = 'heroicon-o-globe-alt';
+    protected static \BackedEnum|string|null $icon = 'heroicon-o-globe-alt';
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
         $geolocationService = app(GeolocationService::class);
 
-        return $form
+        return $schema
             ->schema([
                 Forms\Components\Select::make('match_type')
                     ->label('Match Type')
@@ -32,14 +34,14 @@ class GeoRulesRelationManager extends RelationManager
                     ])
                     ->required()
                     ->reactive()
-                    ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('match_values', [])),
+                    ->afterStateUpdated(fn ($state, Schemas\Components\Utilities\Set $set) => $set('match_values', [])),
 
                 Forms\Components\Select::make('match_values')
                     ->label('Match Values')
                     ->multiple()
                     ->required()
                     ->searchable()
-                    ->options(function (Forms\Get $get) {
+                    ->options(function (Schemas\Components\Utilities\Get $get) {
                         return match ($get('match_type')) {
                             'country' => $this->getCountryOptions(),
                             'continent' => $this->getContinentOptions(),
@@ -47,7 +49,7 @@ class GeoRulesRelationManager extends RelationManager
                             default => []
                         };
                     })
-                    ->helperText(function (Forms\Get $get) {
+                    ->helperText(function (Schemas\Components\Utilities\Get $get) {
                         return match ($get('match_type')) {
                             'country' => 'Select one or more countries',
                             'continent' => 'Select one or more continents',
@@ -55,7 +57,7 @@ class GeoRulesRelationManager extends RelationManager
                             default => 'Select a match type first'
                         };
                     })
-                    ->visible(fn (Forms\Get $get) => $get('match_type') !== null),
+                    ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('match_type') !== null),
 
                 Forms\Components\TextInput::make('redirect_url')
                     ->label('Redirect URL')
@@ -129,16 +131,16 @@ class GeoRulesRelationManager extends RelationManager
                     ->label('Active Status'),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
+                Actions\CreateAction::make()
                     ->visible(fn () => app(GeolocationService::class)->isAvailable()),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Actions\EditAction::make(),
+                Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                Actions\BulkActionGroup::make([
+                    Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('priority', 'asc')

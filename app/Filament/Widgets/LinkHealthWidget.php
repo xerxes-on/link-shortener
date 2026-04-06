@@ -94,5 +94,5 @@ class LinkHealthWidget extends BaseWidget
     /**
      * Poll every 5 minutes to update health status
      */
-    protected static ?string $pollingInterval = '300s';
+    protected ?string $pollingInterval = '300s';
 }

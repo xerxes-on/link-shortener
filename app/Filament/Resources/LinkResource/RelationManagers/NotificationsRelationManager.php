@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\LinkResource\RelationManagers;
 
+use Filament\Actions;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -14,11 +16,11 @@ class NotificationsRelationManager extends RelationManager
 
     protected static ?string $title = 'Notification Settings';
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Section::make('Notification Assignment')
+                Schemas\Components\Section::make('Notification Assignment')
                     ->schema([
                         Forms\Components\Select::make('notification_group_id')
                             ->label('Notification Group')
@@ -42,7 +44,7 @@ class NotificationsRelationManager extends RelationManager
                     ])
                     ->columns(1),
 
-                Forms\Components\Section::make('Notification Settings')
+                Schemas\Components\Section::make('Notification Settings')
                     ->schema([
                         Forms\Components\KeyValue::make('settings')
                             ->helperText('Override default notification settings for this specific link')
@@ -99,15 +101,15 @@ class NotificationsRelationManager extends RelationManager
                 Tables\Filters\TernaryFilter::make('is_active'),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
+                Actions\CreateAction::make()
                     ->modalHeading('Add Notification Assignment')
                     ->modalDescription('Assign a notification group to receive alerts for this specific link.'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
+                Actions\EditAction::make()
                     ->modalHeading('Edit Notification Assignment'),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\Action::make('toggle_active')
+                Actions\DeleteAction::make(),
+                Actions\Action::make('toggle_active')
                     ->label(fn ($record) => $record->is_active ? 'Deactivate' : 'Activate')
                     ->icon(fn ($record) => $record->is_active ? 'heroicon-o-eye-slash' : 'heroicon-o-eye')
                     ->color(fn ($record) => $record->is_active ? 'warning' : 'success')
@@ -117,8 +119,8 @@ class NotificationsRelationManager extends RelationManager
                     ->requiresConfirmation(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                Actions\BulkActionGroup::make([
+                    Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->emptyStateHeading('No Notifications Configured')

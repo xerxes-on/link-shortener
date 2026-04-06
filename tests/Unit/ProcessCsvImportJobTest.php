@@ -9,6 +9,7 @@ use App\Services\CsvImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class ProcessCsvImportJobTest extends TestCase
@@ -20,7 +21,12 @@ class ProcessCsvImportJobTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Permission::findOrCreate('create_link');
+
         $this->user = User::factory()->create();
+        $this->user->givePermissionTo('create_link');
+
         Storage::fake('local');
     }
 

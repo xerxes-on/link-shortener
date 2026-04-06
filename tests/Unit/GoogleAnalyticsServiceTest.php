@@ -263,7 +263,11 @@ class GoogleAnalyticsServiceTest extends TestCase
         $this->service->testConnection();
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'debug_mode=1');
+            // debug_mode is set in the event params body, not in the URL
+            $payload = json_decode($request->body(), true);
+            $params = $payload['events'][0]['params'] ?? [];
+
+            return ($params['debug_mode'] ?? null) === 1;
         });
     }
 

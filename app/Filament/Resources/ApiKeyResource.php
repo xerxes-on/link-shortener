@@ -4,9 +4,11 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ApiKeyResource\Pages;
 use App\Models\ApiKey;
+use Filament\Actions;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,17 +17,18 @@ class ApiKeyResource extends Resource
 {
     protected static ?string $model = ApiKey::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-key';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-key';
 
-    protected static ?string $navigationGroup = 'Settings';
+    protected static \UnitEnum|string|null $navigationGroup = 'Settings';
 
     protected static ?int $navigationSort = 2;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
+            ->columns(1)
             ->schema([
-                Forms\Components\Section::make('API Key Details')
+                Schemas\Components\Section::make('API Key Details')
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->label('Key Name')
@@ -149,12 +152,12 @@ class ApiKeyResource extends Resource
                     ->label('Never Used'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Actions\EditAction::make(),
+                Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                Actions\BulkActionGroup::make([
+                    Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

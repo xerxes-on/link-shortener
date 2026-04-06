@@ -6,14 +6,14 @@ use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
+    // Custom redirect URL takes precedence over admin redirect
+    if ($customUrl = config('shortener.homepage.redirect_url')) {
+        return redirect($customUrl);
+    }
+
     // Redirect to admin panel if configured
     if (config('shortener.homepage.redirect_to_admin')) {
         return redirect('/admin');
-    }
-
-    // Custom redirect URL takes precedence
-    if ($customUrl = config('shortener.homepage.redirect_url')) {
-        return redirect($customUrl);
     }
 
     // Use custom view or default welcome page

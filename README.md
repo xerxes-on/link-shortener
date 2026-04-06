@@ -7,7 +7,7 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 ### 🔗 Core Functionality
 - **Fast URL Shortening** - Generate custom or automatic short codes
 - **Multiple Redirect Types** - Support for 301, 302, 307, and 308 redirects
-- **Link Categories** - Organize links with color-coded groups
+- **Link Groups** - Organize links with color-coded groups
 - **Expiration Dates** - Set automatic link expiration
 - **Custom Slugs** - Create memorable short URLs
 - **QR Code Generation** - Instant QR codes with multiple download formats
@@ -176,8 +176,9 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 **⚡ Quick Setup:** Just 5 commands to get running! The automated installer handles all the complex setup for you.
 
 ### Requirements
-- PHP 8.3+
+- PHP 8.2+
 - Composer
+- Node.js 18+ (for frontend asset compilation)
 - MySQL 8.0+ or SQLite 3.8.8+
 - MaxMind GeoLite2 license key (free, optional but recommended)
 - Redis (optional, for high-performance click tracking)
@@ -192,11 +193,12 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 
 2. **Install dependencies**
    ```bash
-   # For development
+   # PHP dependencies
    composer install
-   
-   # For production (smaller footprint)
-   composer install --no-dev --optimize-autoloader
+
+   # Frontend dependencies and build
+   npm install
+   npm run build
    ```
 
 3. **Environment configuration**
@@ -300,8 +302,8 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
    php artisan route:cache
    php artisan view:cache
    
-   # Optimize Filament
-   php artisan filament:cache-components
+   # Publish Filament assets
+   php artisan filament:assets
    
    # Optimize autoloader (if not done during composer install)
    composer dump-autoload --optimize
@@ -350,7 +352,7 @@ Once you have a super admin account set up, you can manage other users:
 1. Login to `/admin`
 2. Navigate to "Links" → "Create"
 3. Enter the destination URL
-4. Optionally set a custom slug, category, and expiration
+4. Optionally set a custom slug, group, and expiration
 5. Save to generate your short link
 
 **Via CSV Import (Bulk Creation):**
@@ -744,7 +746,7 @@ The application includes built-in Google Analytics 4 integration using the Measu
 
 This project serves as a learning exercise for:
 - **Laravel 12.x** - Latest framework features and best practices
-- **Filament 3.x** - Modern admin panel development
+- **Filament 5.x** - Modern admin panel with Livewire 4
 - **Performance Optimization** - Raw SQL for redirects, caching strategies
 - **Geographic Services** - IP geolocation and mapping
 - **API Design** - RESTful APIs with proper authentication
@@ -770,7 +772,7 @@ app/
 ├── Models/
 │   ├── Link.php                    # Core link model
 │   ├── Click.php                   # Analytics model
-│   └── LinkGroup.php               # Categories
+│   └── LinkGroup.php               # Link groups
 ├── Jobs/
 │   └── LogClickJob.php             # Async click logging
 └── Services/
@@ -958,7 +960,7 @@ php artisan test --coverage
 ```
 
 **Test Coverage:**
-- 170+ tests with 900+ assertions
+- 370+ tests with 1300+ assertions
 - Core redirect functionality
 - Complete API endpoint testing (links and groups)
 - Link generation and validation
@@ -1004,7 +1006,9 @@ This project is open-sourced software licensed under the [MIT license](https://o
 ## Acknowledgments
 
 - **Laravel** - The amazing PHP framework
-- **Filament** - Beautiful admin panel package
+- **Filament 5** - Admin panel framework
+- **Livewire 4** - Reactive UI components
+- **Tailwind CSS 4** - Utility-first CSS framework
 - **MaxMind** - GeoLite2 geographic database
 - **Heroicons** - Clean, modern icons
 

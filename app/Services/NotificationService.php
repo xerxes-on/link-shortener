@@ -2,6 +2,10 @@
 
 namespace App\Services;
 
+use App\Mail\LinkHealthGroupNotification;
+use App\Mail\LinkHealthOwnerNotification;
+use App\Mail\MaintenanceNotification as MaintenanceNotificationMailable;
+use App\Mail\SystemAlertNotification as SystemAlertNotificationMailable;
 use App\Models\Link;
 use App\Models\NotificationGroup;
 use App\Models\NotificationType;
@@ -30,10 +34,10 @@ class NotificationService
 
         // Group failed links by notification groups and link owners
         $groupedNotifications = $this->groupLinksByNotificationTargets($failedLinks, $notificationType);
-        
+
         // Also group previously failed links to properly match them with notification groups
-        $groupedPreviousNotifications = $previouslyFailedLinks ? 
-            $this->groupLinksByNotificationTargets($previouslyFailedLinks, $notificationType) : 
+        $groupedPreviousNotifications = $previouslyFailedLinks ?
+            $this->groupLinksByNotificationTargets($previouslyFailedLinks, $notificationType) :
             ['groups' => [], 'owners' => []];
 
         // Send group notifications (batched)
@@ -160,7 +164,16 @@ class NotificationService
         foreach ($targets as $target) {
             try {
                 match ($target['type']) {
-                    'email' => $this->sendEmailNotification($target['target'], $subject, 'link-health-group', $data),
+                    'email' => Mail::to($target['target'])->send(
+                        new LinkHealthGroupNotification(
+                            groupName: $group->name,
+                            failedLinks: $links,
+                            previouslyFailedLinks: $previousLinks,
+                            totalCount: $totalCount,
+                            newCount: $newCount,
+                            previousCount: $previousCount,
+                        )
+                    ),
                     'webhook' => $this->sendWebhookNotification($target['target'], $subject, $data),
                     'slack' => $this->sendSlackNotification($target['target'], $subject, $data),
                     'discord' => $this->sendDiscordNotification($target['target'], $subject, $data),
@@ -214,7 +227,16 @@ class NotificationService
         ];
 
         try {
-            $this->sendEmailNotification($user->email, $subject, 'link-health-owner', $data);
+            Mail::to($user->email)->send(
+                new LinkHealthOwnerNotification(
+                    user: $user,
+                    failedLinks: $links,
+                    previouslyFailedLinks: $previousLinks,
+                    totalCount: $newCount + $previousCount,
+                    newCount: $newCount,
+                    previousCount: $previousCount,
+                )
+            );
 
             Log::info('Owner health notification sent', [
                 'user_id' => $userId,
@@ -299,7 +321,7 @@ class NotificationService
         foreach ($targets as $target) {
             try {
                 match ($target['type']) {
-                    'email' => $this->sendEmailNotification($target['target'], $subject, $template, $data),
+                    'email' => $this->sendTemplateEmailNotification($target['target'], $template, $data),
                     'webhook' => $this->sendWebhookNotification($target['target'], $subject, $data),
                     'slack' => $this->sendSlackNotification($target['target'], $subject, $data),
                     'discord' => $this->sendDiscordNotification($target['target'], $subject, $data),
@@ -317,14 +339,29 @@ class NotificationService
     }
 
     /**
-     * Send email notification
+     * Send email notification using the appropriate Mailable class
      */
-    private function sendEmailNotification(string $email, string $subject, string $template, array $data): void
+    private function sendTemplateEmailNotification(string $email, string $template, array $data): void
     {
-        Mail::send("emails.notifications.{$template}", $data, function ($message) use ($email, $subject) {
-            $message->to($email)
-                ->subject($subject);
-        });
+        $mailable = match ($template) {
+            'system-alert' => new SystemAlertNotificationMailable(
+                message: $data['message'] ?? '',
+                severity: $data['severity'] ?? 'medium',
+                additionalData: $data,
+                groupName: $data['group_name'] ?? '',
+            ),
+            'maintenance' => new MaintenanceNotificationMailable(
+                message: $data['message'] ?? '',
+                scheduledTime: $data['scheduled_time'] ?? now(),
+                additionalData: $data,
+                groupName: $data['group_name'] ?? '',
+            ),
+            default => null,
+        };
+
+        if ($mailable) {
+            Mail::to($email)->send($mailable);
+        }
     }
 
     /**

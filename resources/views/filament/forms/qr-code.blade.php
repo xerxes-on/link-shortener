@@ -2,20 +2,20 @@
     <div class="flex items-center justify-between">
         <h3 class="text-lg font-medium">QR Code for {{ url($getRecord()->short_code) }}</h3>
     </div>
-    
+
     <div class="flex flex-col sm:flex-row gap-6">
         <!-- QR Code Display -->
         <div class="flex-shrink-0">
             <div class="bg-white p-4 rounded-lg border shadow-sm">
-                <img 
-                    src="{{ route('qr.display', ['link' => $getRecord()->id, 'size' => 200]) }}" 
+                <img
+                    src="{{ route('qr.display', ['link' => $getRecord()->id, 'size' => 200]) }}"
                     alt="QR Code for {{ $getRecord()->short_code }}"
                     class="w-48 h-48"
                     style="image-rendering: pixelated;"
                 />
             </div>
         </div>
-        
+
         <!-- Download Options -->
         <div class="flex-1 space-y-4">
             <div>
@@ -51,7 +51,7 @@
                     </x-filament::button>
                 </div>
             </div>
-            
+
             <div>
                 <h4 class="font-medium text-sm text-gray-700 dark:text-gray-300 mb-2">Usage Instructions</h4>
                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">

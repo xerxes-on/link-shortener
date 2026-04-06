@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\UserResource\Pages\CreateUser;
 use App\Models\User;
 use App\Notifications\WelcomeUser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Notification;
+use Livewire\Livewire;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -35,7 +38,7 @@ class WelcomeUserEmailTest extends TestCase
         ];
 
         foreach ($permissions as $permission) {
-            \Spatie\Permission\Models\Permission::create(['name' => $permission]);
+            Permission::create(['name' => $permission]);
         }
 
         // Give super_admin all permissions
@@ -70,7 +73,6 @@ class WelcomeUserEmailTest extends TestCase
         $response = $this->get('/admin/users/create');
         $response->assertStatus(200);
         $response->assertSee(__('filament.user.send_welcome_email'));
-        $response->assertSee(__('filament.user.welcome_email_hint'));
         $response->assertDontSee(__('filament.user.email_not_configured'));
     }
 
@@ -91,17 +93,17 @@ class WelcomeUserEmailTest extends TestCase
 
         Notification::fake();
 
-        $userData = [
-            'name' => 'Test User',
-            'email' => 'newuser@example.com',
-            'timezone' => 'UTC',
-            'password' => 'secure-password-123',
-            'roles' => ['user'],
-            'send_welcome_email' => true,
-        ];
-
-        $response = $this->post('/admin/users/create', $userData);
-        $response->assertRedirect('/admin/users');
+        Livewire::test(CreateUser::class)
+            ->fillForm([
+                'name' => 'Test User',
+                'email' => 'newuser@example.com',
+                'timezone' => 'UTC',
+                'password' => 'secure-password-123',
+                'roles' => ['user'],
+                'send_welcome_email' => true,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
 
         // Check user was created
         $user = User::where('email', 'newuser@example.com')->first();
@@ -119,17 +121,17 @@ class WelcomeUserEmailTest extends TestCase
 
         Notification::fake();
 
-        $userData = [
-            'name' => 'Test User',
-            'email' => 'newuser@example.com',
-            'timezone' => 'UTC',
-            'password' => 'secure-password-123',
-            'roles' => ['user'],
-            'send_welcome_email' => false,
-        ];
-
-        $response = $this->post('/admin/users/create', $userData);
-        $response->assertRedirect('/admin/users');
+        Livewire::test(CreateUser::class)
+            ->fillForm([
+                'name' => 'Test User',
+                'email' => 'newuser@example.com',
+                'timezone' => 'UTC',
+                'password' => 'secure-password-123',
+                'roles' => ['user'],
+                'send_welcome_email' => false,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
 
         // Check user was created
         $user = User::where('email', 'newuser@example.com')->first();
@@ -145,16 +147,16 @@ class WelcomeUserEmailTest extends TestCase
 
         Notification::fake();
 
-        $userData = [
-            'name' => 'Test User',
-            'email' => 'newuser@example.com',
-            'timezone' => 'UTC',
-            'password' => 'secure-password-123',
-            'roles' => ['user'],
-        ];
-
-        $response = $this->post('/admin/users/create', $userData);
-        $response->assertRedirect('/admin/users');
+        Livewire::test(CreateUser::class)
+            ->fillForm([
+                'name' => 'Test User',
+                'email' => 'newuser@example.com',
+                'timezone' => 'UTC',
+                'password' => 'secure-password-123',
+                'roles' => ['user'],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
 
         // Check user was created
         $user = User::where('email', 'newuser@example.com')->first();

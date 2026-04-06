@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('links', function (Blueprint $table) {
             $table->timestamp('last_checked_at')->nullable()->after('click_count');
-            $table->enum('health_status', ['healthy', 'warning', 'error', 'unchecked'])
+            $table->string('health_status', 20)
                 ->default('unchecked')
                 ->after('last_checked_at');
             $table->integer('http_status_code')->nullable()->after('health_status');

@@ -4,13 +4,17 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\LinkResource\Pages;
 use App\Filament\Resources\LinkResource\RelationManagers;
+use App\Jobs\CheckLinkHealthJob;
 use App\Models\Link;
+use App\Models\LinkGroup;
 use App\Services\TimezoneService;
+use Filament\Actions;
 use Filament\Forms;
 use Filament\Forms\Components\ViewField;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,17 +24,18 @@ class LinkResource extends Resource
 {
     protected static ?string $model = Link::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-link';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-link';
 
-    protected static ?string $navigationGroup = 'Link Management';
+    protected static \UnitEnum|string|null $navigationGroup = 'Link Management';
 
     protected static ?int $navigationSort = 1;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
+            ->columns(1)
             ->schema([
-                Forms\Components\Section::make('Link Details')
+                Schemas\Components\Section::make('Link Details')
                     ->schema([
                         Forms\Components\TextInput::make('custom_slug')
                             ->label('Short URL')
@@ -49,7 +54,7 @@ class LinkResource extends Resource
                             ->searchable()
                             ->preload()
                             ->helperText(function () {
-                                $defaultGroup = \App\Models\LinkGroup::where('is_default', true)->first();
+                                $defaultGroup = LinkGroup::where('is_default', true)->first();
 
                                 return $defaultGroup
                                     ? "Leave empty to use default: {$defaultGroup->name}"
@@ -73,7 +78,7 @@ class LinkResource extends Resource
                             ->default(302)
                             ->required(),
                     ])->columns(2),
-                Forms\Components\Section::make('Security & Limits')
+                Schemas\Components\Section::make('Security & Limits')
                     ->schema([
                         Forms\Components\TextInput::make('password')
                             ->label('Password Protection')
@@ -87,7 +92,7 @@ class LinkResource extends Resource
                             ->minValue(1)
                             ->helperText('Link will become unavailable after this many clicks'),
                     ])->columns(2),
-                Forms\Components\Section::make('Settings')
+                Schemas\Components\Section::make('Settings')
                     ->schema([
                         Forms\Components\Toggle::make('is_active')
                             ->label('Active')
@@ -105,19 +110,9 @@ class LinkResource extends Resource
                                 'data-form-type' => 'other',
                                 'data-lpignore' => 'true',
                                 'data-1p-ignore' => 'true',
-                            ])
-                            ->extraAlpineAttributes([
-                                'x-init' => 'if (navigator.userAgent.includes("Safari")) { 
-                                    setTimeout(() => { 
-                                        if ($el.value && !$el.dataset.userSet) { 
-                                            $el.value = ""; 
-                                        } 
-                                    }, 100); 
-                                }',
-                                'x-on:input' => '$el.dataset.userSet = "true"',
                             ]),
                     ])->columns(2),
-                Forms\Components\Section::make('Health Monitoring')
+                Schemas\Components\Section::make('Health Monitoring')
                     ->schema([
                         Forms\Components\Toggle::make('exclude_from_health_checks')
                             ->label('Exclude from health checks')
@@ -145,7 +140,7 @@ class LinkResource extends Resource
                 Forms\Components\Hidden::make('short_code'),
 
                 // QR Code section - only show when editing existing links
-                Forms\Components\Section::make('QR Code')
+                Schemas\Components\Section::make('QR Code')
                     ->schema([
                         ViewField::make('qr_code')
                             ->view('filament.forms.qr-code')
@@ -155,7 +150,7 @@ class LinkResource extends Resource
                     ->collapsible(),
 
                 // Creation info section - only show when editing
-                Forms\Components\Section::make('Creation Information')
+                Schemas\Components\Section::make('Creation Information')
                     ->schema([
                         Forms\Components\Placeholder::make('created_by_info')
                             ->label('Created by')
@@ -310,7 +305,7 @@ class LinkResource extends Resource
                     ->label('Click Limit Exceeded'),
             ])
             ->headerActions([
-                Tables\Actions\Action::make('export')
+                Actions\Action::make('export')
                     ->label('Export CSV')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('info')
@@ -378,8 +373,8 @@ class LinkResource extends Resource
                     ->tooltip('Export filtered links as CSV'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('qr_code')
+                Actions\EditAction::make(),
+                Actions\Action::make('qr_code')
                     ->label('QR Code')
                     ->icon('heroicon-o-qr-code')
                     ->modalHeading('QR Code')
@@ -387,16 +382,16 @@ class LinkResource extends Resource
                     ->modalSubmitAction(false)
                     ->modalCancelAction(false)
                     ->tooltip('View QR code'),
-                Tables\Actions\Action::make('view_stats')
+                Actions\Action::make('view_stats')
                     ->label('Stats')
                     ->icon('heroicon-o-chart-bar')
                     ->url(fn ($record) => static::getUrl('edit', ['record' => $record->id]).'#clicks')
                     ->tooltip('View click statistics'),
-                Tables\Actions\Action::make('check_health')
+                Actions\Action::make('check_health')
                     ->label('Check Health')
                     ->icon('heroicon-o-arrow-path')
                     ->action(function ($record) {
-                        \App\Jobs\CheckLinkHealthJob::dispatch($record);
+                        CheckLinkHealthJob::dispatch($record);
                     })
                     ->tooltip('Check link health now')
                     ->requiresConfirmation()
@@ -404,11 +399,11 @@ class LinkResource extends Resource
                     ->modalDescription('This will check if the destination URL is still accessible.')
                     ->modalSubmitActionLabel('Check Now')
                     ->successNotificationTitle('Health check queued'),
-                Tables\Actions\DeleteAction::make(),
+                Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('activate')
+                Actions\BulkActionGroup::make([
+                    Actions\BulkAction::make('activate')
                         ->label('Activate')
                         ->icon('heroicon-o-check-circle')
                         ->action(function ($records) {
@@ -422,7 +417,7 @@ class LinkResource extends Resource
                         ->modalSubmitActionLabel('Activate')
                         ->deselectRecordsAfterCompletion()
                         ->color('success'),
-                    Tables\Actions\BulkAction::make('deactivate')
+                    Actions\BulkAction::make('deactivate')
                         ->label('Deactivate')
                         ->icon('heroicon-o-x-circle')
                         ->action(function ($records) {
@@ -436,12 +431,12 @@ class LinkResource extends Resource
                         ->modalSubmitActionLabel('Deactivate')
                         ->deselectRecordsAfterCompletion()
                         ->color('danger'),
-                    Tables\Actions\BulkAction::make('check_health')
+                    Actions\BulkAction::make('check_health')
                         ->label('Check Health')
                         ->icon('heroicon-o-arrow-path')
                         ->action(function ($records) {
                             foreach ($records as $record) {
-                                \App\Jobs\CheckLinkHealthJob::dispatch($record);
+                                CheckLinkHealthJob::dispatch($record);
                             }
                         })
                         ->requiresConfirmation()
@@ -449,7 +444,7 @@ class LinkResource extends Resource
                         ->modalDescription('This will check if the selected destination URLs are still accessible.')
                         ->modalSubmitActionLabel('Check Now')
                         ->deselectRecordsAfterCompletion(),
-                    Tables\Actions\BulkAction::make('remove_expiry')
+                    Actions\BulkAction::make('remove_expiry')
                         ->label('Remove Expiry Date')
                         ->icon('heroicon-o-calendar-days')
                         ->action(function ($records) {
@@ -463,8 +458,8 @@ class LinkResource extends Resource
                         ->modalSubmitActionLabel('Remove Expiry Dates')
                         ->deselectRecordsAfterCompletion()
                         ->color('warning'),
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\BulkAction::make('reset_click_counts')
+                    Actions\DeleteBulkAction::make(),
+                    Actions\BulkAction::make('reset_click_counts')
                         ->label('Reset Click Counts')
                         ->icon('heroicon-o-arrow-path')
                         ->action(function ($records) {
@@ -478,7 +473,7 @@ class LinkResource extends Resource
                         ->modalSubmitActionLabel('Reset Counts')
                         ->deselectRecordsAfterCompletion()
                         ->color('warning'),
-                    Tables\Actions\BulkAction::make('delete_all_clicks')
+                    Actions\BulkAction::make('delete_all_clicks')
                         ->label('Delete All Click Data')
                         ->icon('heroicon-o-trash')
                         ->action(function ($records) {
@@ -489,7 +484,7 @@ class LinkResource extends Resource
                                 $record->update(['click_count' => 0]);
                             }
 
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->title("Deleted {$totalDeleted} click records")
                                 ->success()
                                 ->send();

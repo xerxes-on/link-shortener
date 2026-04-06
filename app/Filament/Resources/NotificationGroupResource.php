@@ -7,9 +7,11 @@ use App\Filament\Resources\NotificationGroupResource\Pages;
 use App\Filament\Resources\NotificationGroupResource\RelationManagers;
 use App\Models\NotificationGroup;
 use App\Models\User;
+use Filament\Actions;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -17,17 +19,18 @@ class NotificationGroupResource extends Resource
 {
     protected static ?string $model = NotificationGroup::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-user-group';
 
     protected static ?string $cluster = NotificationsCluster::class;
 
     protected static ?int $navigationSort = 1;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
+            ->columns(1)
             ->schema([
-                Forms\Components\Section::make('Group Details')
+                Schemas\Components\Section::make('Group Details')
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->required()
@@ -43,7 +46,7 @@ class NotificationGroupResource extends Resource
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Notification Targets')
+                Schemas\Components\Section::make('Notification Targets')
                     ->description('Configure who and how this group should be notified')
                     ->schema([
                         Forms\Components\CheckboxList::make('users')
@@ -68,7 +71,7 @@ class NotificationGroupResource extends Resource
                                     ])
                                     ->required()
                                     ->live()
-                                    ->afterStateUpdated(function (Forms\Set $set) {
+                                    ->afterStateUpdated(function (Schemas\Components\Utilities\Set $set) {
                                         $set('config', []);
                                     }),
 
@@ -76,35 +79,35 @@ class NotificationGroupResource extends Resource
                                     ->label('Webhook URL')
                                     ->url()
                                     ->required()
-                                    ->visible(fn (Forms\Get $get) => $get('type') === 'webhook'),
+                                    ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('type') === 'webhook'),
 
                                 Forms\Components\Select::make('config.method')
                                     ->label('HTTP Method')
                                     ->options(['GET' => 'GET', 'POST' => 'POST'])
                                     ->default('POST')
-                                    ->visible(fn (Forms\Get $get) => $get('type') === 'webhook'),
+                                    ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('type') === 'webhook'),
 
                                 Forms\Components\TextInput::make('config.webhook_url')
                                     ->label('Slack Webhook URL')
                                     ->url()
                                     ->required()
-                                    ->visible(fn (Forms\Get $get) => $get('type') === 'slack'),
+                                    ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('type') === 'slack'),
 
                                 Forms\Components\TextInput::make('config.channel')
                                     ->label('Channel Name (optional)')
-                                    ->visible(fn (Forms\Get $get) => $get('type') === 'slack'),
+                                    ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('type') === 'slack'),
 
                                 Forms\Components\TextInput::make('config.webhook_url')
                                     ->label('Discord Webhook URL')
                                     ->url()
                                     ->required()
-                                    ->visible(fn (Forms\Get $get) => $get('type') === 'discord'),
+                                    ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('type') === 'discord'),
 
                                 Forms\Components\TextInput::make('config.webhook_url')
                                     ->label('Teams Webhook URL')
                                     ->url()
                                     ->required()
-                                    ->visible(fn (Forms\Get $get) => $get('type') === 'teams'),
+                                    ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('type') === 'teams'),
 
                                 Forms\Components\Toggle::make('is_active')
                                     ->default(true)
@@ -119,7 +122,7 @@ class NotificationGroupResource extends Resource
                     ])
                     ->collapsible(),
 
-                Forms\Components\Section::make('Advanced Settings')
+                Schemas\Components\Section::make('Advanced Settings')
                     ->schema([
                         Forms\Components\KeyValue::make('settings')
                             ->helperText('Additional JSON configuration for this group')
@@ -170,12 +173,12 @@ class NotificationGroupResource extends Resource
                     ->label('Active Status'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Actions\EditAction::make(),
+                Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                Actions\BulkActionGroup::make([
+                    Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

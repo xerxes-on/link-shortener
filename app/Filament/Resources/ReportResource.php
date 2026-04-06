@@ -6,9 +6,12 @@ use App\Filament\Resources\ReportResource\Pages;
 use App\Models\Link;
 use App\Models\LinkGroup;
 use App\Models\Report;
+use Filament\Actions;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,13 +20,14 @@ class ReportResource extends Resource
 {
     protected static ?string $model = Report::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-chart-bar-square';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-chart-bar-square';
 
-    protected static ?string $navigationGroup = 'Analytics';
+    protected static \UnitEnum|string|null $navigationGroup = 'Analytics';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
+            ->columns(1)
             ->schema([
                 Forms\Components\TextInput::make('name')
                     ->required()
@@ -31,7 +35,7 @@ class ReportResource extends Resource
                 Forms\Components\Textarea::make('description')
                     ->rows(3)
                     ->columnSpanFull(),
-                Forms\Components\Grid::make(2)
+                Schemas\Components\Grid::make(2)
                     ->schema([
                         Forms\Components\Select::make('visibility')
                             ->options([
@@ -47,7 +51,7 @@ class ReportResource extends Resource
                             ->inline(false),
                     ]),
 
-                Forms\Components\Section::make('Date Range')
+                Schemas\Components\Section::make('Date Range')
                     ->schema([
                         Forms\Components\Select::make('global_filters.date_range_type')
                             ->label('Date Range Type')
@@ -76,21 +80,21 @@ class ReportResource extends Resource
                                 'last_month' => 'Last month',
                             ])
                             ->default('last_30_days')
-                            ->visible(fn (Forms\Get $get): bool => $get('global_filters.date_range_type') === 'relative'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get): bool => $get('global_filters.date_range_type') === 'relative'),
 
                         Forms\Components\DatePicker::make('global_filters.start_date')
                             ->label('Start Date')
                             ->default(now()->subDays(30))
-                            ->visible(fn (Forms\Get $get): bool => $get('global_filters.date_range_type') === 'fixed'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get): bool => $get('global_filters.date_range_type') === 'fixed'),
                         Forms\Components\DatePicker::make('global_filters.end_date')
                             ->label('End Date')
                             ->default(now())
-                            ->visible(fn (Forms\Get $get): bool => $get('global_filters.date_range_type') === 'fixed'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get): bool => $get('global_filters.date_range_type') === 'fixed'),
                     ])
                     ->columns(2)
                     ->collapsible(),
 
-                Forms\Components\Section::make('Data Filters')
+                Schemas\Components\Section::make('Data Filters')
                     ->schema([
                         Forms\Components\Select::make('global_filters.link_filter_type')
                             ->label('Include Data From')
@@ -108,7 +112,7 @@ class ReportResource extends Resource
                             ->multiple()
                             ->options(fn () => LinkGroup::pluck('name', 'id')->toArray())
                             ->searchable()
-                            ->visible(fn (Forms\Get $get): bool => $get('global_filters.link_filter_type') === 'link_groups')
+                            ->visible(fn (Schemas\Components\Utilities\Get $get): bool => $get('global_filters.link_filter_type') === 'link_groups')
                             ->helperText('Select which link groups to include in this report'),
 
                         Forms\Components\Select::make('global_filters.link_ids')
@@ -121,7 +125,7 @@ class ReportResource extends Resource
                                 ])
                                 ->toArray())
                             ->searchable()
-                            ->visible(fn (Forms\Get $get): bool => $get('global_filters.link_filter_type') === 'specific_links')
+                            ->visible(fn (Schemas\Components\Utilities\Get $get): bool => $get('global_filters.link_filter_type') === 'specific_links')
                             ->helperText('Select specific links to include in this report'),
 
                         Forms\Components\Toggle::make('global_filters.exclude_bots')
@@ -150,7 +154,7 @@ class ReportResource extends Resource
                             ->columns(3)
                             ->defaultItems(0)
                             ->addActionLabel('Add Email Campaign')
-                            ->visible(fn (Forms\Get $get): bool => $get('global_filters.exclude_bots'))
+                            ->visible(fn (Schemas\Components\Utilities\Get $get): bool => $get('global_filters.exclude_bots'))
                             ->helperText('Add time periods when you sent bulk emails to exclude scanner clicks'),
                     ])
                     ->collapsible(),
@@ -204,15 +208,15 @@ class ReportResource extends Resource
                     ->label('Active'),
             ])
             ->actions([
-                Tables\Actions\Action::make('view')
+                Actions\Action::make('view')
                     ->icon('heroicon-o-eye')
                     ->url(fn (Report $record): string => route('reports.view', $record))
                     ->openUrlInNewTab(),
-                Tables\Actions\Action::make('builder')
+                Actions\Action::make('builder')
                     ->icon('heroicon-o-wrench-screwdriver')
                     ->label('Build')
                     ->url(fn (Report $record): string => route('reports.builder', $record)),
-                Tables\Actions\Action::make('clone')
+                Actions\Action::make('clone')
                     ->icon('heroicon-o-document-duplicate')
                     ->label('Clone')
                     ->action(function (Report $record) {
@@ -230,7 +234,7 @@ class ReportResource extends Resource
                             $clonedComponent->save();
                         }
 
-                        \Filament\Notifications\Notification::make()
+                        Notification::make()
                             ->title('Report cloned successfully!')
                             ->body("Created '{$cloned->name}' with all components.")
                             ->success()
@@ -239,12 +243,12 @@ class ReportResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Clone Report')
                     ->modalDescription('This will create a copy of this report with all its components.'),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Actions\EditAction::make(),
+                Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                Actions\BulkActionGroup::make([
+                    Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');

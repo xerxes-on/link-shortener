@@ -7,11 +7,31 @@ use App\Models\ReportComponent;
 use App\Models\User;
 use App\Services\ReportMetricsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class ReportBuilderTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Reset Spatie permission cache
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+        // Create report permissions
+        $permissions = [
+            'view_report', 'view_any_report', 'create_report',
+            'update_report', 'delete_report',
+        ];
+
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission]);
+        }
+    }
 
     public function test_can_create_report()
     {
@@ -109,6 +129,7 @@ class ReportBuilderTest extends TestCase
     {
         $report = Report::factory()->create([
             'global_filters' => [
+                'date_range_type' => 'fixed',
                 'start_date' => '2023-01-01',
                 'end_date' => '2023-01-31',
             ],

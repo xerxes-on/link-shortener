@@ -3,9 +3,10 @@
 namespace App\Filament\Resources\NotificationGroupResource\RelationManagers;
 
 use App\Models\User;
+use Filament\Actions;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -13,9 +14,9 @@ class UsersRelationManager extends RelationManager
 {
     protected static string $relationship = 'users';
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Forms\Components\Select::make('recordId')
                     ->label('User')
@@ -66,8 +67,8 @@ class UsersRelationManager extends RelationManager
                     ->attribute('pivot.is_active'),
             ])
             ->headerActions([
-                Tables\Actions\AttachAction::make()
-                    ->form(fn (Tables\Actions\AttachAction $action): array => [
+                Actions\AttachAction::make()
+                    ->form(fn (Actions\AttachAction $action): array => [
                         $action->getRecordSelect()
                             ->searchable()
                             ->preload(),
@@ -76,8 +77,8 @@ class UsersRelationManager extends RelationManager
                     ]),
             ])
             ->actions([
-                Tables\Actions\DetachAction::make(),
-                Tables\Actions\Action::make('toggle_active')
+                Actions\DetachAction::make(),
+                Actions\Action::make('toggle_active')
                     ->label(fn ($record) => $record->pivot->is_active ? 'Deactivate' : 'Activate')
                     ->icon(fn ($record) => $record->pivot->is_active ? 'heroicon-o-eye-slash' : 'heroicon-o-eye')
                     ->color(fn ($record) => $record->pivot->is_active ? 'warning' : 'success')
@@ -91,8 +92,8 @@ class UsersRelationManager extends RelationManager
                     ->requiresConfirmation(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DetachBulkAction::make(),
+                Actions\BulkActionGroup::make([
+                    Actions\DetachBulkAction::make(),
                 ]),
             ]);
     }

@@ -4,9 +4,11 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
+use App\Providers\Filament\AdminPanelProvider;
+use Filament\Actions;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Hash;
@@ -17,15 +19,16 @@ class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-users';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-users';
 
-    protected static ?string $navigationGroup = 'Settings';
+    protected static \UnitEnum|string|null $navigationGroup = 'Settings';
 
     protected static ?int $navigationSort = 1;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
+            ->columns(1)
             ->schema([
                 Forms\Components\TextInput::make('name')
                     ->required()
@@ -83,7 +86,7 @@ class UserResource extends Resource
                     )
                     ->suffixAction(
                         fn (string $context) => $context === 'create'
-                            ? Forms\Components\Actions\Action::make('regenerate')
+                            ? Actions\Action::make('regenerate')
                                 ->icon('heroicon-o-arrow-path')
                                 ->tooltip(__('filament.user.regenerate_password'))
                                 ->action(fn ($set) => $set('password', Str::password(12)))
@@ -151,15 +154,15 @@ class UserResource extends Resource
                     ->preload(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make()
+                Actions\EditAction::make(),
+                Actions\DeleteAction::make()
                     ->visible(fn (User $record) => auth()->user()->hasRole('super_admin') &&
                         ! $record->hasRole('super_admin')
                     ),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
+                Actions\BulkActionGroup::make([
+                    Actions\DeleteBulkAction::make()
                         ->visible(fn () => auth()->user()->hasRole('super_admin')),
                 ]),
             ]);
@@ -186,7 +189,7 @@ class UserResource extends Resource
      */
     public static function isEmailConfigured(): bool
     {
-        $panelProvider = new \App\Providers\Filament\AdminPanelProvider(app());
+        $panelProvider = new AdminPanelProvider(app());
 
         return $panelProvider->isEmailConfigured();
     }

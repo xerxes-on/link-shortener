@@ -3,9 +3,11 @@
 namespace App\Filament\Resources\NotificationGroupResource\RelationManagers;
 
 use App\Models\NotificationChannel;
+use Filament\Actions;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -13,9 +15,9 @@ class ChannelsRelationManager extends RelationManager
 {
     protected static string $relationship = 'channels';
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Forms\Components\TextInput::make('name')
                     ->required()
@@ -25,66 +27,66 @@ class ChannelsRelationManager extends RelationManager
                     ->options(NotificationChannel::getAvailableTypes())
                     ->required()
                     ->live()
-                    ->afterStateUpdated(function (Forms\Set $set) {
+                    ->afterStateUpdated(function (Schemas\Components\Utilities\Set $set) {
                         $set('config', []);
                     }),
 
-                Forms\Components\Section::make('Configuration')
+                Schemas\Components\Section::make('Configuration')
                     ->schema([
                         Forms\Components\TextInput::make('config.email')
                             ->label('Email Address')
                             ->email()
                             ->required()
-                            ->visible(fn (Forms\Get $get) => $get('type') === 'email'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('type') === 'email'),
 
                         Forms\Components\TextInput::make('config.name')
                             ->label('Display Name')
-                            ->visible(fn (Forms\Get $get) => $get('type') === 'email'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('type') === 'email'),
 
                         Forms\Components\TextInput::make('config.url')
                             ->label('Webhook URL')
                             ->url()
                             ->required()
-                            ->visible(fn (Forms\Get $get) => $get('type') === 'webhook'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('type') === 'webhook'),
 
                         Forms\Components\Select::make('config.method')
                             ->label('HTTP Method')
                             ->options(['GET' => 'GET', 'POST' => 'POST'])
                             ->default('POST')
-                            ->visible(fn (Forms\Get $get) => $get('type') === 'webhook'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('type') === 'webhook'),
 
                         Forms\Components\Textarea::make('config.headers')
                             ->label('Custom Headers (JSON)')
                             ->helperText('Additional HTTP headers as JSON object')
-                            ->visible(fn (Forms\Get $get) => $get('type') === 'webhook'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('type') === 'webhook'),
 
                         Forms\Components\TextInput::make('config.webhook_url')
                             ->label('Slack Webhook URL')
                             ->url()
                             ->required()
-                            ->visible(fn (Forms\Get $get) => $get('type') === 'slack'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('type') === 'slack'),
 
                         Forms\Components\TextInput::make('config.channel')
                             ->label('Channel Name')
                             ->helperText('Override default channel (optional)')
-                            ->visible(fn (Forms\Get $get) => $get('type') === 'slack'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('type') === 'slack'),
 
                         Forms\Components\TextInput::make('config.username')
                             ->label('Bot Username')
                             ->helperText('Custom username for messages (optional)')
-                            ->visible(fn (Forms\Get $get) => in_array($get('type'), ['slack', 'discord'])),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get) => in_array($get('type'), ['slack', 'discord'])),
 
                         Forms\Components\TextInput::make('config.webhook_url')
                             ->label('Discord Webhook URL')
                             ->url()
                             ->required()
-                            ->visible(fn (Forms\Get $get) => $get('type') === 'discord'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('type') === 'discord'),
 
                         Forms\Components\TextInput::make('config.webhook_url')
                             ->label('Teams Webhook URL')
                             ->url()
                             ->required()
-                            ->visible(fn (Forms\Get $get) => $get('type') === 'teams'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('type') === 'teams'),
                     ]),
 
                 Forms\Components\Toggle::make('is_active')
@@ -127,15 +129,15 @@ class ChannelsRelationManager extends RelationManager
                 Tables\Filters\TernaryFilter::make('is_active'),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Actions\CreateAction::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Actions\EditAction::make(),
+                Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                Actions\BulkActionGroup::make([
+                    Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

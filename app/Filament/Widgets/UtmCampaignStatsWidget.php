@@ -12,7 +12,7 @@ class UtmCampaignStatsWidget extends BaseWidget
 {
     protected static ?string $heading = 'Campaign Performance';
 
-    protected static ?string $description = 'Top performing UTM campaigns and sources';
+    protected ?string $description = 'Top performing UTM campaigns and sources';
 
     protected int|string|array $columnSpan = 'full';
 

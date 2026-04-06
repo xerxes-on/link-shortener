@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\AbTest;
+use Filament\Actions;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -137,7 +138,7 @@ class AbTestStatsWidget extends BaseWidget
             ])
             ->defaultSort('created_at', 'desc')
             ->actions([
-                Tables\Actions\Action::make('view_details')
+                Actions\Action::make('view_details')
                     ->label('View Details')
                     ->icon('heroicon-o-chart-bar')
                     ->color('info')

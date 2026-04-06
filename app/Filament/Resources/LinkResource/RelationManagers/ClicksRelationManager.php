@@ -2,12 +2,14 @@
 
 namespace App\Filament\Resources\LinkResource\RelationManagers;
 
+use App\Models\Click;
 use App\Services\TimezoneService;
 use Carbon\Carbon;
+use Filament\Actions;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,9 +19,9 @@ class ClicksRelationManager extends RelationManager
 {
     protected static string $relationship = 'clicks';
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Forms\Components\TextInput::make('ip_address')
                     ->label('IP Address')
@@ -143,7 +145,7 @@ class ClicksRelationManager extends RelationManager
             ->filters([
                 Tables\Filters\SelectFilter::make('country')
                     ->options(function () {
-                        return \App\Models\Click::whereNotNull('country')
+                        return Click::whereNotNull('country')
                             ->distinct()
                             ->pluck('country', 'country')
                             ->toArray();
@@ -176,7 +178,7 @@ class ClicksRelationManager extends RelationManager
                     ->label('This Week'),
                 Tables\Filters\SelectFilter::make('utm_source')
                     ->options(function () {
-                        return \App\Models\Click::whereNotNull('utm_source')
+                        return Click::whereNotNull('utm_source')
                             ->distinct()
                             ->pluck('utm_source', 'utm_source')
                             ->toArray();
@@ -184,7 +186,7 @@ class ClicksRelationManager extends RelationManager
                     ->label('UTM Source'),
                 Tables\Filters\SelectFilter::make('utm_medium')
                     ->options(function () {
-                        return \App\Models\Click::whereNotNull('utm_medium')
+                        return Click::whereNotNull('utm_medium')
                             ->distinct()
                             ->pluck('utm_medium', 'utm_medium')
                             ->toArray();
@@ -192,7 +194,7 @@ class ClicksRelationManager extends RelationManager
                     ->label('UTM Medium'),
                 Tables\Filters\SelectFilter::make('utm_campaign')
                     ->options(function () {
-                        return \App\Models\Click::whereNotNull('utm_campaign')
+                        return Click::whereNotNull('utm_campaign')
                             ->distinct()
                             ->pluck('utm_campaign', 'utm_campaign')
                             ->toArray();
@@ -241,7 +243,7 @@ class ClicksRelationManager extends RelationManager
                     ->label('Date Range'),
             ])
             ->headerActions([
-                Tables\Actions\Action::make('export')
+                Actions\Action::make('export')
                     ->label('Export CSV')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('info')
@@ -311,7 +313,7 @@ class ClicksRelationManager extends RelationManager
                         return Response::stream($callback, 200, $headers);
                     })
                     ->tooltip('Export filtered click data as CSV'),
-                Tables\Actions\Action::make('delete_all_clicks')
+                Actions\Action::make('delete_all_clicks')
                     ->label('Delete All Clicks')
                     ->icon('heroicon-o-trash')
                     ->color('danger')
@@ -333,8 +335,8 @@ class ClicksRelationManager extends RelationManager
                     ->tooltip('Delete all click data for this link'),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\DeleteAction::make()
+                Actions\ViewAction::make(),
+                Actions\DeleteAction::make()
                     ->action(function ($record) {
                         // Delete the record
                         $record->delete();
@@ -356,8 +358,8 @@ class ClicksRelationManager extends RelationManager
                     ->successNotificationTitle(null), // Disable default notification
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
+                Actions\BulkActionGroup::make([
+                    Actions\DeleteBulkAction::make()
                         ->action(function ($records) {
                             $deletedCount = $records->count();
 

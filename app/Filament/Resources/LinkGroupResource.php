@@ -4,9 +4,10 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\LinkGroupResource\Pages;
 use App\Models\LinkGroup;
+use Filament\Actions;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -14,15 +15,16 @@ class LinkGroupResource extends Resource
 {
     protected static ?string $model = LinkGroup::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-folder';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-folder';
 
-    protected static ?string $navigationGroup = 'Link Management';
+    protected static \UnitEnum|string|null $navigationGroup = 'Link Management';
 
     protected static ?int $navigationSort = 2;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
+            ->columns(1)
             ->schema([
                 Forms\Components\TextInput::make('name')
                     ->required()
@@ -82,7 +84,7 @@ class LinkGroupResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\Action::make('setDefault')
+                Actions\Action::make('setDefault')
                     ->label('Set as Default')
                     ->icon('heroicon-o-star')
                     ->visible(fn ($record) => ! $record->is_default)
@@ -93,8 +95,8 @@ class LinkGroupResource extends Resource
                     ->modalHeading('Set as Default Group')
                     ->modalDescription('This will make this group the default for new links. Any existing default will be unset.')
                     ->modalSubmitActionLabel('Yes, set as default'),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make()
+                Actions\EditAction::make(),
+                Actions\DeleteAction::make()
                     ->requiresConfirmation()
                     ->modalHeading('Delete Link Group')
                     ->modalDescription(fn ($record) => $record->links()->count() > 0
@@ -105,7 +107,7 @@ class LinkGroupResource extends Resource
                     ->before(function ($record) {
                         // Move links to default group or ungroup them before deletion
                         if ($record->links()->count() > 0) {
-                            $defaultGroup = \App\Models\LinkGroup::getDefault();
+                            $defaultGroup = LinkGroup::getDefault();
                             $newGroupId = $defaultGroup && $defaultGroup->id !== $record->id ? $defaultGroup->id : null;
 
                             $record->links()->update(['group_id' => $newGroupId]);
@@ -113,15 +115,15 @@ class LinkGroupResource extends Resource
                     }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
+                Actions\BulkActionGroup::make([
+                    Actions\DeleteBulkAction::make()
                         ->requiresConfirmation()
                         ->modalHeading('Delete Link Groups')
                         ->modalDescription('All links in these groups will be moved to the default group or left ungrouped if no default exists.')
                         ->modalSubmitActionLabel('Yes, delete groups')
                         ->before(function ($records) {
                             // Move all links from deleted groups to default or ungroup them
-                            $defaultGroup = \App\Models\LinkGroup::getDefault();
+                            $defaultGroup = LinkGroup::getDefault();
 
                             foreach ($records as $record) {
                                 if ($record->links()->count() > 0) {

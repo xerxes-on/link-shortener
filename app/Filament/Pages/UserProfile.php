@@ -2,24 +2,28 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 
+/**
+ * @property-read Schema $profileForm
+ * @property-read Schema $passwordForm
+ */
 class UserProfile extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-user-circle';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-user-circle';
 
     protected static ?string $navigationLabel = 'Profile';
 
     protected static ?string $title = 'My Profile';
 
-    protected static string $view = 'filament.pages.user-profile';
+    protected string $view = 'filament.pages.user-profile';
 
     protected static bool $shouldRegisterNavigation = false;
 
@@ -31,17 +35,25 @@ class UserProfile extends Page
     {
         $user = auth()->user();
 
-        $this->profileData = [
+        $this->profileForm->fill([
             'name' => $user->name,
             'email' => $user->email,
             'timezone' => $user->timezone ?? 'UTC',
+        ]);
+    }
+
+    protected function getForms(): array
+    {
+        return [
+            'profileForm',
+            'passwordForm',
         ];
     }
 
-    public function getProfileForm(): Form
+    public function profileForm(Schema $schema): Schema
     {
-        return Form::make($this)
-            ->schema([
+        return $schema
+            ->components([
                 Section::make('Profile Information')
                     ->description('Update your account profile information.')
                     ->schema([
@@ -75,10 +87,10 @@ class UserProfile extends Page
             ->statePath('profileData');
     }
 
-    public function getPasswordForm(): Form
+    public function passwordForm(Schema $schema): Schema
     {
-        return Form::make($this)
-            ->schema([
+        return $schema
+            ->components([
                 Section::make('Update Password')
                     ->description('Ensure your account is using a long, random password to stay secure.')
                     ->schema([
@@ -112,7 +124,7 @@ class UserProfile extends Page
 
     public function updateProfile(): void
     {
-        $data = $this->getProfileForm()->getState();
+        $data = $this->profileForm->getState();
 
         auth()->user()->update([
             'name' => $data['name'],
@@ -128,7 +140,7 @@ class UserProfile extends Page
 
     public function updatePassword(): void
     {
-        $data = $this->getPasswordForm()->getState();
+        $data = $this->passwordForm->getState();
 
         auth()->user()->update([
             'password' => Hash::make($data['password']),

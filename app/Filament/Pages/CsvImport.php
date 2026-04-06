@@ -6,20 +6,20 @@ use App\Jobs\ProcessCsvImportJob;
 use App\Models\User;
 use App\Services\CsvImportService;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class CsvImport extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-arrow-up-tray';
 
-    protected static string $view = 'filament.pages.csv-import';
+    protected string $view = 'filament.pages.csv-import';
 
-    protected static ?string $navigationGroup = 'System';
+    protected static \UnitEnum|string|null $navigationGroup = 'System';
 
     protected static ?string $title = 'CSV Import';
 
@@ -47,9 +47,9 @@ class CsvImport extends Page
         return $user?->can('page_CsvImport') && $user?->can('create_link') ?? false;
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Section::make('CSV Import')
                     ->description('Import multiple links from a CSV file. Use the template below to format your data correctly.')

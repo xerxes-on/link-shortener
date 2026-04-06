@@ -44,16 +44,25 @@ class SendGoogleAnalyticsEventJob implements ShouldQueue
             return;
         }
 
-        $success = $gaService->sendClickEvent($this->clickData);
+        try {
+            $success = $gaService->sendClickEvent($this->clickData);
 
-        if (! $success) {
-            Log::warning('Failed to send GA4 event', [
+            if (! $success) {
+                Log::warning('Failed to send GA4 event', [
+                    'click_data' => $this->clickData,
+                    'attempt' => $this->attempts(),
+                ]);
+
+                // For GA failures, we don't want to retry since it's not critical
+                // Just log and continue - GA tracking is supplementary to core functionality
+            }
+        } catch (\Throwable $e) {
+            Log::error('GA4 event exception in job', [
+                'error' => $e->getMessage(),
                 'click_data' => $this->clickData,
-                'attempt' => $this->attempts(),
             ]);
 
-            // For GA failures, we don't want to retry since it's not critical
-            // Just log and continue - GA tracking is supplementary to core functionality
+            // GA tracking is supplementary - don't let exceptions affect core functionality
         }
     }
 

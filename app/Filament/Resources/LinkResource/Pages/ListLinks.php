@@ -9,9 +9,11 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas;
+use Filament\Schemas\Schema;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
 
 class ListLinks extends ListRecords implements HasForms
@@ -47,13 +49,13 @@ class ListLinks extends ListRecords implements HasForms
         ];
     }
 
-    public function quickAddForm(Form $form): Form
+    public function quickAddForm(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Section::make('Quick Add Link')
+                Schemas\Components\Section::make('Quick Add Link')
                     ->schema([
-                        Forms\Components\Grid::make(['default' => 1, 'md' => 4])
+                        Schemas\Components\Grid::make(['default' => 1, 'md' => 4])
                             ->schema([
                                 Forms\Components\TextInput::make('custom_slug')
                                     ->label('Short URL')
@@ -71,8 +73,8 @@ class ListLinks extends ListRecords implements HasForms
                                     ->options(LinkGroup::pluck('name', 'id'))
                                     ->searchable()
                                     ->placeholder('Select group...'),
-                                Forms\Components\Actions::make([
-                                    Forms\Components\Actions\Action::make('quickAdd')
+                                Schemas\Components\Actions::make([
+                                    Actions\Action::make('quickAdd')
                                         ->label('Add Link')
                                         ->icon('heroicon-m-plus')
                                         ->color('success')
@@ -171,7 +173,7 @@ class ListLinks extends ListRecords implements HasForms
         $this->dispatch('focusShortUrl');
     }
 
-    public function getHeader(): ?\Illuminate\Contracts\View\View
+    public function getHeader(): ?View
     {
         return view('filament.pages.quick-add-header', [
             'form' => $this->quickAddForm,

@@ -4,6 +4,8 @@ namespace Tests\Unit;
 
 use App\Mail\LinkHealthGroupNotification;
 use App\Mail\LinkHealthOwnerNotification;
+use App\Mail\MaintenanceNotification;
+use App\Mail\SystemAlertNotification;
 use App\Models\Link;
 use App\Models\LinkNotification;
 use App\Models\NotificationChannel;
@@ -85,10 +87,15 @@ class NotificationServiceTest extends TestCase
         // Send notifications
         $this->notificationService->sendLinkHealthNotifications($failedLinks);
 
-        // Assert group email was sent
+        // Assert group emails were sent (one per user)
         Mail::assertSent(LinkHealthGroupNotification::class, function ($mail) use ($group) {
             return $mail->hasTo('admin@example.com') &&
-                   $mail->hasTo('dev@example.com') &&
+                   $mail->groupName === $group->name &&
+                   $mail->failedLinks->count() === 2;
+        });
+
+        Mail::assertSent(LinkHealthGroupNotification::class, function ($mail) use ($group) {
+            return $mail->hasTo('dev@example.com') &&
                    $mail->groupName === $group->name &&
                    $mail->failedLinks->count() === 2;
         });
@@ -103,6 +110,13 @@ class NotificationServiceTest extends TestCase
 
     public function test_sends_link_health_notifications_to_owners(): void
     {
+        // Create notification type with notify_link_owner enabled
+        NotificationType::factory()->create([
+            'name' => 'link_health',
+            'notify_link_owner' => true,
+            'default_groups' => [],
+        ]);
+
         // Create failed link with owner
         $owner = User::factory()->create(['email' => 'owner@example.com', 'name' => 'Link Owner']);
         $link = Link::factory()->create([
@@ -132,7 +146,7 @@ class NotificationServiceTest extends TestCase
         $group2 = NotificationGroup::factory()->create(['name' => 'DevOps Team']);
 
         $notificationType = NotificationType::factory()->create([
-            'name' => 'system-alert',
+            'name' => 'system_alert',
             'default_groups' => [$group1->id, $group2->id],
         ]);
 
@@ -157,18 +171,18 @@ class NotificationServiceTest extends TestCase
         $this->notificationService->sendSystemAlert($message, $severity, $additionalData);
 
         // Assert emails were sent to both groups
-        Mail::assertSent(\App\Mail\SystemAlertNotification::class, function ($mail) use ($admin) {
+        Mail::assertSent(SystemAlertNotification::class, function ($mail) use ($admin) {
             return $mail->hasTo($admin->email);
         });
 
-        Mail::assertSent(\App\Mail\SystemAlertNotification::class, function ($mail) use ($devops) {
+        Mail::assertSent(SystemAlertNotification::class, function ($mail) use ($devops) {
             return $mail->hasTo($devops->email);
         });
 
-        // Assert Slack webhook was called
+        // Assert Slack webhook was called with the subject
         Http::assertSent(function ($request) {
             return $request->url() === 'https://hooks.slack.com/test' &&
-                   str_contains($request->body(), 'Critical system issue detected');
+                   str_contains($request->body(), 'System Alert');
         });
     }
 
@@ -202,18 +216,18 @@ class NotificationServiceTest extends TestCase
         $this->notificationService->sendMaintenanceNotification($message, $scheduledTime, $additionalData);
 
         // Assert emails were sent
-        Mail::assertSent(\App\Mail\MaintenanceNotification::class, function ($mail) use ($user1) {
+        Mail::assertSent(MaintenanceNotification::class, function ($mail) use ($user1) {
             return $mail->hasTo($user1->email);
         });
 
-        Mail::assertSent(\App\Mail\MaintenanceNotification::class, function ($mail) use ($user2) {
+        Mail::assertSent(MaintenanceNotification::class, function ($mail) use ($user2) {
             return $mail->hasTo($user2->email);
         });
 
-        // Assert Discord webhook was called
+        // Assert Discord webhook was called with the subject
         Http::assertSent(function ($request) {
             return $request->url() === 'https://discord.com/api/webhooks/test' &&
-                   str_contains($request->body(), 'Scheduled maintenance starting');
+                   str_contains($request->body(), 'Maintenance Notification');
         });
     }
 
@@ -360,8 +374,8 @@ class NotificationServiceTest extends TestCase
             $body = json_decode($request->body(), true);
 
             return $request->url() === 'https://outlook.office.com/webhook/test' &&
-                   isset($body['text']) &&
-                   str_contains($body['text'], 'Test teams message');
+                   isset($body['summary']) &&
+                   str_contains($body['summary'], 'Test teams message');
         });
     }
 

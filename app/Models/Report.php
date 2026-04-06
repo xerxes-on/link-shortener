@@ -56,7 +56,7 @@ class Report extends Model
 
         // Public reports are visible to everyone (even unauthenticated users)
         if ($this->visibility === 'public') {
-            return auth()->check() ? auth()->user()->can('view public reports') : true;
+            return auth()->check() ? auth()->user()->can('view_report') : true;
         }
 
         // For private/team reports, user must be authenticated
@@ -67,7 +67,7 @@ class Report extends Model
         $user = auth()->user();
 
         // Check basic view permission
-        if (! $user->can('view reports')) {
+        if (! $user->can('view_report')) {
             return false;
         }
 
@@ -78,7 +78,7 @@ class Report extends Model
 
         // Team reports
         if ($this->visibility === 'team') {
-            return $user->can('view team reports');
+            return $user->can('view_any_report');
         }
 
         return false;

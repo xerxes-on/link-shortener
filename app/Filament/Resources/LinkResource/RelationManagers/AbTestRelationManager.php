@@ -3,11 +3,14 @@
 namespace App\Filament\Resources\LinkResource\RelationManagers;
 
 use App\Models\AbTest;
+use Filament\Actions;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Contracts\View\View;
 
 class AbTestRelationManager extends RelationManager
 {
@@ -19,9 +22,9 @@ class AbTestRelationManager extends RelationManager
 
     protected static ?string $modelLabel = 'A/B Test';
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Forms\Components\TextInput::make('name')
                     ->required()
@@ -79,7 +82,7 @@ class AbTestRelationManager extends RelationManager
                         if (is_array($state)) {
                             $totalWeight = collect($state)->sum('weight');
                             if ($totalWeight > 0 && $totalWeight !== 100) {
-                                \Filament\Notifications\Notification::make()
+                                Notification::make()
                                     ->warning()
                                     ->title('Weight Warning')
                                     ->body("Current total weight: {$totalWeight}%. Should be exactly 100%.")
@@ -134,17 +137,17 @@ class AbTestRelationManager extends RelationManager
                     ->label('Active Tests'),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Actions\CreateAction::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\Action::make('view_stats')
+                Actions\EditAction::make(),
+                Actions\DeleteAction::make(),
+                Actions\Action::make('view_stats')
                     ->label('View Stats')
                     ->icon('heroicon-o-chart-bar')
                     ->color('info')
                     ->modalHeading(fn (AbTest $record): string => "A/B Test Statistics: {$record->name}")
-                    ->modalContent(function (AbTest $record): \Illuminate\Contracts\View\View {
+                    ->modalContent(function (AbTest $record): View {
                         $variants = $record->variants()->withCount('clicks')->get();
                         $totalClicks = $variants->sum('clicks_count');
 
@@ -157,8 +160,8 @@ class AbTestRelationManager extends RelationManager
                     ->modalWidth('4xl'),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                Actions\BulkActionGroup::make([
+                    Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

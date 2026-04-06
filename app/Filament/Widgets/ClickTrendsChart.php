@@ -9,7 +9,7 @@ use Filament\Widgets\ChartWidget;
 
 class ClickTrendsChart extends ChartWidget
 {
-    protected static ?string $heading = 'Click Trends';
+    protected ?string $heading = 'Click Trends';
 
     protected static ?int $sort = 4;
 

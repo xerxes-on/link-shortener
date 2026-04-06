@@ -7,9 +7,11 @@ use App\Filament\Resources\NotificationRuleResource\Pages;
 use App\Models\LinkGroup;
 use App\Models\NotificationGroup;
 use App\Models\NotificationType;
+use Filament\Actions;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -17,7 +19,7 @@ class NotificationRuleResource extends Resource
 {
     protected static ?string $model = NotificationType::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-bell-alert';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-bell-alert';
 
     protected static ?string $cluster = NotificationsCluster::class;
 
@@ -27,11 +29,12 @@ class NotificationRuleResource extends Resource
 
     protected static ?string $pluralLabel = 'Notification Rules';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
+            ->columns(1)
             ->schema([
-                Forms\Components\Section::make('Rule Details')
+                Schemas\Components\Section::make('Rule Details')
                     ->schema([
                         Forms\Components\TextInput::make('display_name')
                             ->label('Rule Name')
@@ -48,7 +51,7 @@ class NotificationRuleResource extends Resource
                     ])
                     ->columns(1),
 
-                Forms\Components\Section::make('When to Notify')
+                Schemas\Components\Section::make('When to Notify')
                     ->schema([
                         Forms\Components\Select::make('name')
                             ->label('Notification Type')
@@ -63,12 +66,12 @@ class NotificationRuleResource extends Resource
 
                         Forms\Components\TextInput::make('name')
                             ->label('Custom Event Name')
-                            ->visible(fn (Forms\Get $get) => $get('name') === 'custom')
+                            ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('name') === 'custom')
                             ->helperText('Enter a unique identifier for this custom notification type'),
                     ])
                     ->columns(1),
 
-                Forms\Components\Section::make('Who to Notify')
+                Schemas\Components\Section::make('Who to Notify')
                     ->schema([
                         Forms\Components\Select::make('default_groups')
                             ->label('Default Notification Groups')
@@ -93,33 +96,33 @@ class NotificationRuleResource extends Resource
                     ])
                     ->columns(1),
 
-                Forms\Components\Section::make('Notification Settings')
+                Schemas\Components\Section::make('Notification Settings')
                     ->schema([
                         Forms\Components\Checkbox::make('exclude_blocked_links')
                             ->label('Exclude blocked links')
                             ->helperText('Don\'t send notifications for links with "blocked" status (often due to server IP restrictions)')
                             ->default(true)
-                            ->visible(fn (Forms\Get $get) => $get('name') === 'link_health'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('name') === 'link_health'),
 
                         Forms\Components\Placeholder::make('batching_info')
                             ->label('Email Delivery')
                             ->content('Group notifications: One summary email with all failed links. Link owner notifications: Separate email containing only their links.')
-                            ->visible(fn (Forms\Get $get) => $get('name') === 'link_health'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('name') === 'link_health'),
 
                         Forms\Components\Placeholder::make('link_health_info')
                             ->label('Link Health Notifications')
                             ->content('Sent when: Link health checks fail (HTTP errors, timeouts). Contains: Link URL, error message, HTTP status code, last working time.')
-                            ->visible(fn (Forms\Get $get) => $get('name') === 'link_health'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('name') === 'link_health'),
 
                         Forms\Components\Placeholder::make('system_alert_info')
                             ->label('System Alert Notifications')
                             ->content('Sent when: Critical system issues occur. Contains: Alert description, severity level, affected components, recommended actions.')
-                            ->visible(fn (Forms\Get $get) => $get('name') === 'system_alert'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('name') === 'system_alert'),
 
                         Forms\Components\Placeholder::make('maintenance_info')
                             ->label('Maintenance Notifications')
                             ->content('Sent when: Scheduled maintenance begins/ends. Contains: Maintenance window, affected services, expected duration, status updates.')
-                            ->visible(fn (Forms\Get $get) => $get('name') === 'maintenance'),
+                            ->visible(fn (Schemas\Components\Utilities\Get $get) => $get('name') === 'maintenance'),
                     ])
                     ->collapsible()
                     ->collapsed(),
@@ -205,12 +208,12 @@ class NotificationRuleResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Actions\EditAction::make(),
+                Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                Actions\BulkActionGroup::make([
+                    Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');

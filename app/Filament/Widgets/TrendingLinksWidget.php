@@ -13,7 +13,7 @@ class TrendingLinksWidget extends BaseWidget
 {
     protected static ?string $heading = 'Trending Links';
 
-    protected static ?string $description = 'Links gaining momentum in the last 24 hours';
+    protected ?string $description = 'Links gaining momentum in the last 24 hours';
 
     protected static ?int $sort = 4; // This will place it above TopLinksWidget (which has sort = 5)
 
