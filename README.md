@@ -984,6 +984,76 @@ php artisan test --coverage
 - **Third-party integrations** - Settings management and admin panel functionality
 - **CSV Import System** - Bulk link creation with validation, queue processing, and error handling
 
+## Changelog
+
+### 2026-04-06 - Security Update: Filament 5, Livewire 4, Shield 4
+
+Upgraded core dependencies to address a Livewire security vulnerability and an XSS vulnerability in Filament tables (CVE-2026-33080).
+
+**Dependency upgrades:**
+- Filament 3.3.49 → 5.4.0
+- Livewire 3.6.3 → 4.2.1
+- Filament Shield 3.3.6 → 4.2.0
+- Spatie Permission 6.18.0 → 7.2.2
+- Tailwind CSS config migrated from JS to CSS-only (v4)
+
+**Breaking changes for existing installations:**
+- Permission names changed from `::` separator to `_` (e.g., `view_api::key` → `view_api_key`). Run the rename command in the [deployment notes](#deployment-notes-for-filament-5-upgrade).
+- Shield config (`config/filament-shield.php`) completely rewritten for v4 format
+- `tailwind.config.js` removed — Tailwind v4 uses CSS-based config in `resources/css/app.css`
+- Filament assets must be republished: `php artisan filament:assets`
+- Frontend must be rebuilt: `npm install && npm run build`
+
+**Other improvements:**
+- `roles:setup` command is now additive by default (won't remove existing permissions unless `--reset` is used)
+- `roles:setup` auto-includes all page and widget permissions dynamically
+- Fixed health_status migrations for SQLite compatibility
+- Fixed route precedence for custom redirect URLs
+- Fixed 76 pre-existing test failures (371 tests now passing)
+
+#### Deployment Notes for Filament 5 Upgrade
+
+If upgrading an existing installation:
+
+```bash
+# 1. Upload all files (except vendor/, node_modules/, .env, storage/)
+
+# 2. Install dependencies
+composer install --no-dev --optimize-autoloader
+
+# 3. Run migrations
+php artisan migrate --force
+
+# 4. Rebuild frontend and publish assets
+npm install && npm run build
+php artisan filament:assets
+
+# 5. Rename old permissions (:: → _)
+php artisan tinker --execute '
+use Spatie\Permission\Models\Permission;
+Permission::where("name", "like", "%::%")->each(function ($p) {
+    $newName = str_replace("::", "_", $p->name);
+    if (!Permission::where("name", $newName)->where("guard_name", $p->guard_name)->exists()) {
+        $p->update(["name" => $newName]);
+    } else {
+        $p->delete();
+    }
+});
+app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+echo "Done\n";
+'
+
+# 6. Generate new permissions and set up roles
+php artisan shield:generate --all
+php artisan roles:setup
+
+# 7. Clear caches
+php artisan optimize:clear
+
+# 8. Delete hot file if it exists
+rm -f public/hot
+```
+
 ## Future Enhancements
 
 ### Advanced Features
