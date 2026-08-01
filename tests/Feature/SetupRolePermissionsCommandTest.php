@@ -12,132 +12,194 @@ class SetupRolePermissionsCommandTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Every permission the command references, using the `_` separator that
+     * Shield 4 generates. Keep this in step with SetupRolePermissions::getDefaultPermissions().
+     */
+    private const PERMISSIONS = [
+        // Links
+        'view_any_link', 'view_link', 'create_link', 'update_link', 'delete_link', 'delete_any_link',
+        // Link groups
+        'view_any_link_group', 'view_link_group', 'create_link_group', 'update_link_group',
+        'delete_link_group', 'delete_any_link_group',
+        // API keys
+        'view_any_api_key', 'view_api_key', 'create_api_key', 'update_api_key', 'delete_api_key',
+        // Reports
+        'view_any_report', 'view_report', 'create_report', 'update_report', 'delete_report', 'delete_any_report',
+        // Widgets and pages - auto-included for every role
+        'widget_OverviewStatsWidget', 'widget_LinkHealthWidget', 'widget_GeographicStatsWidget',
+        'widget_ClickTrendsChart', 'widget_TopLinksWidget',
+        'page_UserProfile', 'page_CsvImport',
+    ];
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        // Create the roles
         Role::firstOrCreate(['name' => 'super_admin']);
         Role::firstOrCreate(['name' => 'admin']);
         Role::firstOrCreate(['name' => 'user']);
 
-        // Reset Spatie permission cache
-        app()[PermissionRegistrar::class]->forgetCachedPermissions();
-
-        // Create some test permissions (matching what the command expects)
-        $permissions = [
-            'view_link', 'create_link', 'update_link', 'delete_link', 'view_any_link', 'delete_any_link',
-            'view_link::group', 'create_link::group', 'update_link::group', 'delete_link::group', 'view_any_link::group', 'delete_any_link::group',
-            'view_api::key', 'create_api::key', 'update_api::key', 'delete_api::key', 'view_any_api::key',
-            'widget_OverviewStatsWidget', 'widget_LinkHealthWidget', 'widget_GeographicStatsWidget', 'widget_ClickTrendsChart', 'widget_TopLinksWidget',
-            'page_UserProfile', 'page_CsvImport',
-        ];
-
-        foreach ($permissions as $permission) {
+        foreach (self::PERMISSIONS as $permission) {
             Permission::firstOrCreate(['name' => $permission]);
         }
+
+        $this->forgetPermissionCache();
+    }
+
+    private function forgetPermissionCache(): void
+    {
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
     }
 
     public function test_setup_command_assigns_default_permissions(): void
     {
         $this->artisan('roles:setup')
-            ->expectsOutput('🔧 Setting up role permissions...')
-            ->expectsOutput('✅ Role permissions setup complete!')
+            ->expectsOutput('Setting up role permissions...')
+            ->expectsOutput('Role permissions setup complete!')
             ->assertExitCode(0);
 
-        // Check admin role permissions
+        $this->forgetPermissionCache();
+
         $adminRole = Role::findByName('admin');
         $this->assertTrue($adminRole->hasPermissionTo('view_link'));
         $this->assertTrue($adminRole->hasPermissionTo('create_link'));
-        $this->assertTrue($adminRole->hasPermissionTo('widget_OverviewStatsWidget'));
-        $this->assertTrue($adminRole->hasPermissionTo('page_UserProfile'));
+        $this->assertTrue($adminRole->hasPermissionTo('view_any_api_key'));
+        $this->assertTrue($adminRole->hasPermissionTo('view_any_link_group'));
+        $this->assertTrue($adminRole->hasPermissionTo('view_any_report'));
 
-        // Check user role permissions
         $userRole = Role::findByName('user');
         $this->assertTrue($userRole->hasPermissionTo('view_link'));
         $this->assertTrue($userRole->hasPermissionTo('create_link'));
-        $this->assertTrue($userRole->hasPermissionTo('widget_OverviewStatsWidget'));
-        $this->assertFalse($userRole->hasPermissionTo('widget_LinkHealthWidget')); // Admin only
+        $this->assertTrue($userRole->hasPermissionTo('view_any_api_key'));
 
-        // panel_user role has been removed from the system
+        // Admin-only: bulk deletion and reports are not part of the user defaults
+        $this->assertFalse($userRole->hasPermissionTo('delete_any_link'));
+        $this->assertFalse($userRole->hasPermissionTo('view_any_report'));
+        $this->assertFalse($userRole->hasPermissionTo('create_link_group'));
+    }
+
+    public function test_page_and_widget_permissions_are_granted_to_every_role(): void
+    {
+        $this->artisan('roles:setup')->assertExitCode(0);
+
+        $this->forgetPermissionCache();
+
+        foreach (['admin', 'user'] as $roleName) {
+            $role = Role::findByName($roleName);
+
+            $this->assertTrue($role->hasPermissionTo('widget_OverviewStatsWidget'));
+            $this->assertTrue($role->hasPermissionTo('widget_LinkHealthWidget'));
+            $this->assertTrue($role->hasPermissionTo('page_UserProfile'));
+            $this->assertTrue($role->hasPermissionTo('page_CsvImport'));
+        }
     }
 
     public function test_setup_command_with_specific_role(): void
     {
         $this->artisan('roles:setup', ['--role' => ['admin']])
-            ->expectsOutputToContain('Set up admin role with')
+            ->expectsOutputToContain('permissions to admin role')
             ->assertExitCode(0);
 
-        // Only admin role should be configured
-        $adminRole = Role::findByName('admin');
-        $userRole = Role::findByName('user');
+        $this->forgetPermissionCache();
 
+        // Only the admin role should have been configured
+        $this->assertTrue(Role::findByName('admin')->hasPermissionTo('view_link'));
+        $this->assertFalse(Role::findByName('user')->hasPermissionTo('view_link'));
+    }
+
+    public function test_setup_command_is_additive_by_default(): void
+    {
+        $adminRole = Role::findByName('admin');
+        $adminRole->givePermissionTo('view_link');
+
+        // A permission outside the defaults must survive a default (non-reset) run
+        Permission::firstOrCreate(['name' => 'custom_extra_permission']);
+        $adminRole->givePermissionTo('custom_extra_permission');
+
+        $this->forgetPermissionCache();
+
+        $this->artisan('roles:setup')->assertExitCode(0);
+
+        $this->forgetPermissionCache();
+
+        $adminRole = Role::findByName('admin');
+        $this->assertTrue($adminRole->hasPermissionTo('custom_extra_permission'));
         $this->assertTrue($adminRole->hasPermissionTo('view_link'));
-        $this->assertFalse($userRole->hasPermissionTo('view_link'));
+        $this->assertTrue($adminRole->hasPermissionTo('view_any_api_key'));
     }
 
     public function test_setup_command_with_reset_option(): void
     {
-        // First, manually assign some permissions
         $adminRole = Role::findByName('admin');
-        $adminRole->givePermissionTo('view_link');
 
-        // Run setup with reset
+        Permission::firstOrCreate(['name' => 'custom_extra_permission']);
+        $adminRole->givePermissionTo('custom_extra_permission');
+
+        $this->forgetPermissionCache();
+
         $this->artisan('roles:setup', ['--reset' => true])
-            ->expectsOutput('🔄 Reset permissions for admin role')
+            ->expectsOutputToContain('Reset and set admin role with')
             ->assertExitCode(0);
 
-        // Permissions should be reset and then reassigned
-        $this->assertTrue($adminRole->fresh()->hasPermissionTo('view_link'));
+        $this->forgetPermissionCache();
+
+        $adminRole = Role::findByName('admin');
+
+        // Defaults reapplied, non-default permission dropped
+        $this->assertTrue($adminRole->hasPermissionTo('view_link'));
+        $this->assertFalse($adminRole->hasPermissionTo('custom_extra_permission'));
     }
 
     public function test_command_fails_when_no_permissions_exist(): void
     {
-        // Remove all permissions
         Permission::query()->delete();
+        $this->forgetPermissionCache();
 
         $this->artisan('roles:setup')
-            ->expectsOutput('❌ No permissions found! Please run "php artisan shield:generate --all" first.')
+            ->expectsOutput('No permissions found! Please run "php artisan shield:generate --all" first.')
             ->assertExitCode(1);
     }
 
-    public function test_command_warns_about_missing_role(): void
+    public function test_command_creates_a_missing_role(): void
     {
-        // Delete a role
         Role::findByName('admin')->delete();
+        $this->forgetPermissionCache();
 
         $this->artisan('roles:setup')
-            ->expectsOutput("⚠️  Role 'admin' not found, skipping...")
+            ->expectsOutput("Created 'admin' role")
             ->assertExitCode(0);
+
+        $this->forgetPermissionCache();
+
+        $adminRole = Role::findByName('admin');
+        $this->assertTrue($adminRole->hasPermissionTo('view_link'));
     }
 
     public function test_command_handles_missing_permissions_gracefully(): void
     {
-        // Remove some permissions that the command expects
-        Permission::where('name', 'widget_LinkHealthWidget')->delete();
-
-        // Reset Spatie permission cache after deleting a permission
-        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+        // A permission from the hardcoded defaults, not the dynamic page/widget lookup
+        Permission::where('name', 'delete_any_report')->delete();
+        $this->forgetPermissionCache();
 
         $this->artisan('roles:setup')
-            ->expectsOutputToContain('Some permissions don\'t exist for admin')
+            ->expectsOutputToContain("Some permissions don't exist for admin")
             ->assertExitCode(0);
 
-        // Reset cache again to reflect newly assigned permissions
-        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+        $this->forgetPermissionCache();
 
-        // Should still assign existing permissions
+        // The remaining permissions are still assigned
         $adminRole = Role::findByName('admin');
         $this->assertTrue($adminRole->hasPermissionTo('view_link'));
+        $this->assertTrue($adminRole->hasPermissionTo('view_report'));
 
-        // widget_LinkHealthWidget was deleted, so checking it would throw
-        $this->assertFalse(Permission::where('name', 'widget_LinkHealthWidget')->exists());
+        $this->assertFalse(Permission::where('name', 'delete_any_report')->exists());
     }
 
     public function test_command_displays_role_summary(): void
     {
         $this->artisan('roles:setup')
-            ->expectsOutput('📋 Summary:')
+            ->expectsOutput('Summary:')
             ->expectsOutputToContain('permissions')
             ->assertExitCode(0);
     }

@@ -15,7 +15,7 @@ class LinkGroupPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_link::group');
+        return $user->can('view_any_link_group');
     }
 
     /**
@@ -23,7 +23,7 @@ class LinkGroupPolicy
      */
     public function view(User $user, LinkGroup $linkGroup): bool
     {
-        return $user->can('view_link::group');
+        return $user->can('view_link_group');
     }
 
     /**
@@ -31,7 +31,7 @@ class LinkGroupPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_link::group');
+        return $user->can('create_link_group');
     }
 
     /**
@@ -39,7 +39,7 @@ class LinkGroupPolicy
      */
     public function update(User $user, LinkGroup $linkGroup): bool
     {
-        return $user->can('update_link::group');
+        return $user->can('update_link_group');
     }
 
     /**
@@ -47,7 +47,7 @@ class LinkGroupPolicy
      */
     public function delete(User $user, LinkGroup $linkGroup): bool
     {
-        return $user->can('delete_link::group');
+        return $user->can('delete_link_group');
     }
 
     /**
@@ -55,7 +55,7 @@ class LinkGroupPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_link::group');
+        return $user->can('delete_any_link_group');
     }
 
     /**
@@ -63,7 +63,7 @@ class LinkGroupPolicy
      */
     public function forceDelete(User $user, LinkGroup $linkGroup): bool
     {
-        return $user->can('force_delete_link::group');
+        return $user->can('force_delete_link_group');
     }
 
     /**
@@ -71,7 +71,7 @@ class LinkGroupPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_link::group');
+        return $user->can('force_delete_any_link_group');
     }
 
     /**
@@ -79,7 +79,7 @@ class LinkGroupPolicy
      */
     public function restore(User $user, LinkGroup $linkGroup): bool
     {
-        return $user->can('restore_link::group');
+        return $user->can('restore_link_group');
     }
 
     /**
@@ -87,7 +87,7 @@ class LinkGroupPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_link::group');
+        return $user->can('restore_any_link_group');
     }
 
     /**
@@ -95,7 +95,7 @@ class LinkGroupPolicy
      */
     public function replicate(User $user, LinkGroup $linkGroup): bool
     {
-        return $user->can('replicate_link::group');
+        return $user->can('replicate_link_group');
     }
 
     /**
@@ -103,6 +103,6 @@ class LinkGroupPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_link::group');
+        return $user->can('reorder_link_group');
     }
 }

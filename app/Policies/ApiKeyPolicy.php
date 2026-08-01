@@ -15,7 +15,7 @@ class ApiKeyPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_api::key');
+        return $user->can('view_any_api_key');
     }
 
     /**
@@ -23,7 +23,7 @@ class ApiKeyPolicy
      */
     public function view(User $user, ApiKey $apiKey): bool
     {
-        return $user->can('view_api::key');
+        return $user->can('view_api_key');
     }
 
     /**
@@ -31,7 +31,7 @@ class ApiKeyPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_api::key');
+        return $user->can('create_api_key');
     }
 
     /**
@@ -39,7 +39,7 @@ class ApiKeyPolicy
      */
     public function update(User $user, ApiKey $apiKey): bool
     {
-        return $user->can('update_api::key');
+        return $user->can('update_api_key');
     }
 
     /**
@@ -47,7 +47,7 @@ class ApiKeyPolicy
      */
     public function delete(User $user, ApiKey $apiKey): bool
     {
-        return $user->can('delete_api::key');
+        return $user->can('delete_api_key');
     }
 
     /**
@@ -55,7 +55,7 @@ class ApiKeyPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_api::key');
+        return $user->can('delete_any_api_key');
     }
 
     /**
@@ -63,7 +63,7 @@ class ApiKeyPolicy
      */
     public function forceDelete(User $user, ApiKey $apiKey): bool
     {
-        return $user->can('force_delete_api::key');
+        return $user->can('force_delete_api_key');
     }
 
     /**
@@ -71,7 +71,7 @@ class ApiKeyPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_api::key');
+        return $user->can('force_delete_any_api_key');
     }
 
     /**
@@ -79,7 +79,7 @@ class ApiKeyPolicy
      */
     public function restore(User $user, ApiKey $apiKey): bool
     {
-        return $user->can('restore_api::key');
+        return $user->can('restore_api_key');
     }
 
     /**
@@ -87,7 +87,7 @@ class ApiKeyPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_api::key');
+        return $user->can('restore_any_api_key');
     }
 
     /**
@@ -95,7 +95,7 @@ class ApiKeyPolicy
      */
     public function replicate(User $user, ApiKey $apiKey): bool
     {
-        return $user->can('replicate_api::key');
+        return $user->can('replicate_api_key');
     }
 
     /**
@@ -103,6 +103,6 @@ class ApiKeyPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_api::key');
+        return $user->can('reorder_api_key');
     }
 }

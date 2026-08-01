@@ -51,6 +51,8 @@ A modern URL shortening service built with Laravel and Filament, featuring geogr
 - **User Profile Settings** - Password changes and preferences from user menu
 - **API Key Management** - Secure key generation with visible keys and easy copying
 - **RESTful API** - Complete REST API with permission-based authentication
+- **API Key Verification** - `/api/me` endpoint lets integrations validate a key and identify its owner
+- **API Link Analytics** - Zero-filled daily time series plus country, referrer and UTM breakdowns per link
 - **Rate Limiting** - Protection against abuse
 
 ### 🌍 Geographic Features
@@ -625,6 +627,8 @@ You can always customize permissions in the admin panel at "Settings" → "Roles
 
 **Note:** Leave permissions empty for full access to all endpoints.
 
+**Note:** `/api/me` is exempt from permission checks - any valid, unexpired key can call it. This lets an integration verify a key it has been given without needing to know which scopes it holds.
+
 **API Authentication Methods:**
 ```bash
 # Method 1: Authorization Header (Recommended)
@@ -640,6 +644,11 @@ curl -X GET 'https://example.com/api/links?api_key=sk_your_api_key'
 ```
 
 ### API Endpoints
+
+**Account API:**
+| Method | Endpoint | Description | Permissions Required |
+|--------|----------|-------------|---------------------|
+| `GET` | `/api/me` | Verify a key and identify its owner | None - any valid key |
 
 **Links API:**
 | Method | Endpoint | Description | Permissions Required |
@@ -660,9 +669,66 @@ curl -X GET 'https://example.com/api/links?api_key=sk_your_api_key'
 | `PUT` | `/api/groups/{id}` | Update a group | `groups:update` |
 | `DELETE` | `/api/groups/{id}` | Delete a group | `groups:delete` |
 
-**Special Parameters:**
-- `GET /api/groups?simple=true` - Returns simplified list for dropdowns
-- `POST/PUT` with `"is_default": true` - Sets group as default for new links
+**Query Parameters:**
+
+`GET /api/links`
+- `search` - Substring match against short code, custom slug, and destination URL
+- `sort` - `created_at` (default) or `click_count`
+- `direction` - `asc` or `desc` (default)
+- `group_id` / `is_active` - Filter by group or active state
+- `per_page` - Results per page (default 15, max 100)
+
+`GET /api/links/{id}/stats`
+- `days` - Width of the daily time series (default 30, clamped to 1-365)
+
+`GET /api/groups`
+- `simple=true` - Returns simplified list for dropdowns
+
+**Other Parameters:**
+- `POST/PUT` on groups with `"is_default": true` - Sets group as default for new links
+
+### Key Verification
+
+`GET /api/me` lets an integration confirm a pasted key is valid and show who it belongs to. It requires only a valid, unexpired key, so a key restricted to a single scope can still identify itself:
+
+```bash
+curl -X GET 'https://example.com/api/me' \
+  -H 'Authorization: Bearer sk_your_api_key'
+```
+
+```json
+{
+    "data": {
+        "user": { "id": 3, "name": "Jane Broker", "email": "jane@example.com" },
+        "key": {
+            "name": "Intranet key",
+            "permissions": null,
+            "expires_at": null,
+            "last_used_at": "2026-08-01T10:00:00.000000Z"
+        }
+    }
+}
+```
+
+`permissions: null` means full access. The key itself is never returned. `last_used_at` reports the *previous* authenticated request rather than the current one, so it stays meaningful when displayed in a UI. Invalid, missing and expired keys each return a distinct 401 message, so a client can tell "never worked" from "stopped working".
+
+### Link Statistics
+
+`GET /api/links/{id}/stats` returns aggregate click data for a single link. All figures are calculated in SQL, so response time does not grow with click volume:
+
+```bash
+curl -X GET 'https://example.com/api/links/12/stats?days=30' \
+  -H 'Authorization: Bearer sk_your_api_key'
+```
+
+Returns:
+- `total_clicks`, `today_clicks`, `this_week_clicks`, `this_month_clicks` - Counts per window (weeks start Monday, days are UTC)
+- `daily_series` - One zero-filled entry per day for the last `days` days, ready to chart directly
+- `top_countries` - Up to 10 countries by click count
+- `top_referrers` - Up to 10 referrers **grouped by host** (scheme, `www.`, port, path and query are stripped, so all paths on a domain count together). The `null` bucket is direct/unknown traffic
+- `utm.campaigns` / `utm.sources` / `utm.mediums` - Up to 10 values each, nulls excluded
+
+**Note:** `link.click_count` (the denormalised counter on the link) and `stats.total_clicks` (a count of click rows) come from different sources and can briefly disagree under Redis or queued click tracking. Use `stats.total_clicks` when the number must agree with the breakdowns alongside it.
 
 ## Third-Party Integrations
 
@@ -764,7 +830,8 @@ This project serves as a learning exercise for:
 ```
 app/
 ├── Http/Controllers/
-│   ├── Api/LinkController.php      # API endpoints
+│   ├── Api/LinkController.php      # Link API endpoints
+│   ├── Api/AccountController.php   # Key verification (/api/me)
 │   └── RedirectController.php      # Fast redirect handler
 ├── Filament/
 │   ├── Resources/                  # Admin panel resources
@@ -777,6 +844,7 @@ app/
 │   └── LogClickJob.php             # Async click logging
 └── Services/
     ├── GeolocationService.php      # IP to location mapping
+    ├── LinkStatsService.php        # SQL-side click aggregation
     └── LinkShortenerService.php    # URL generation
 ```
 
@@ -960,9 +1028,9 @@ php artisan test --coverage
 ```
 
 **Test Coverage:**
-- 370+ tests with 1300+ assertions
+- 395+ tests with 1375+ assertions
 - Core redirect functionality
-- Complete API endpoint testing (links and groups)
+- Complete API endpoint testing (links, groups, key verification, and statistics)
 - Link generation and validation
 - Geographic data processing and geo-targeting rules
 - UTM parameter pass-through and analytics tracking
@@ -983,8 +1051,71 @@ php artisan test --coverage
 - **Google Analytics 4 integration** - Complete service, job, and integration testing
 - **Third-party integrations** - Settings management and admin panel functionality
 - **CSV Import System** - Bulk link creation with validation, queue processing, and error handling
+- **API key verification** - `/api/me` with valid, restricted, expired and missing keys
+- **API link statistics** - SQL aggregation correctness, time-series zero-fill, top-N ordering, referrer host grouping, and a guard proving click rows are never hydrated
 
 ## Changelog
+
+### 2026-08-02 - Fix: admin menu items hidden since the Filament 5 upgrade
+
+**API Keys**, **Groups** and **Settings → Notifications** were missing from the admin navigation for every user, in every role, since the 2026-04-06 upgrade.
+
+**Cause:** that upgrade renamed permissions from the `::` separator to `_` in the database, but five policy files were never updated to match. They kept checking the old names:
+
+```php
+// app/Policies/ApiKeyPolicy.php - before
+return $user->can('view_any_api::key');   // no such permission exists
+// after
+return $user->can('view_any_api_key');    // matches the database
+```
+
+`can()` on a permission name that doesn't exist returns `false` silently, so `viewAny()` always denied and Filament hid the resource. Shield is configured with `define_via_gate => false`, meaning there is no super-admin bypass — the check applied to everyone, including `super_admin`.
+
+Only multi-word resource names were affected, because `view_any_link` is spelled identically under both conventions. That is why Links, Reports, Users and Roles kept working.
+
+**Fixed policies:** `ApiKeyPolicy`, `LinkGroupPolicy`, `NotificationChannelPolicy`, `NotificationGroupPolicy`, `NotificationTypePolicy`.
+
+**Deployment:** upload `app/Policies/` only. No migrations, no `shield:generate`, no `roles:setup`, no cache clear — the database was always correct, only the code was wrong. Restart PHP-FPM if OPcache runs with `validate_timestamps=0`.
+
+**Diagnosing this class of problem:** compare what the policies ask for against what actually exists:
+
+```bash
+# What the policies check
+grep -rho "can('[^']*')" app/Policies/ | sed "s/can('\(.*\)')/\1/" | sort -u
+
+# What the database holds
+php artisan tinker --execute 'echo \Spatie\Permission\Models\Permission::orderBy("name")->pluck("name")->implode("\n");'
+```
+
+Any name in the first list that is absent from the second is a permanently-denied check. Note that `app/Policies/RolePolicy.php` still contains unrendered Shield placeholders (`can('{{ ForceDelete }}')`) on its force-delete, restore and reorder methods. These are harmless — the corresponding permissions do not exist either, so those actions stay denied, which is the intended default.
+
+### 2026-08-02 - API: key verification, expanded link statistics, searchable index
+
+Extends the REST API so external tools can validate their own credentials and build a stats UI without hammering the database.
+
+**New:**
+- `GET /api/me` - Verifies a key and returns its owner. Requires only a valid, unexpired key, so permission-restricted keys can still identify themselves. Never echoes the key back
+- `GET /api/links` gains `search` (matches short code, custom slug and destination URL), `sort` (`created_at` or `click_count`) and `direction`
+- `GET /api/links/{id}/stats` gains `this_month_clicks`, a zero-filled `daily_series`, `top_referrers` and `utm` breakdowns, plus a `days` parameter (default 30, clamped to 1-365)
+
+**Improvements:**
+- Link statistics are now aggregated entirely in SQL. The previous implementation loaded every click row into memory and grouped in PHP, which would not survive a link with tens of thousands of clicks. Response cost is now flat regardless of click volume, and a test asserts the query count stays constant as clicks grow
+- Referrers are grouped by host in SQL, so every path on a domain counts towards that domain rather than being split across separate rows
+- The links index reads the denormalised `links.click_count` column instead of running a per-link aggregate over the clicks table
+- Index results are ordered by `id` as a tiebreaker, making pagination stable when sort values tie
+- `last_used_at` on an API key is preserved before being overwritten, so `/api/me` reports the previous request rather than always reading "just now"
+
+**Breaking change:**
+- Items in the `GET /api/links` response no longer include the `clicks: [...]` pseudo-array, which was an artifact of how counts were previously computed. Use the `click_count` integer field on each item instead
+
+**Deployment:** No migrations, no dependency changes, and no frontend rebuild required. If you cache routes, re-cache them so the new `/api/me` route resolves:
+
+```bash
+php artisan optimize:clear   # safe whether or not caches exist
+php artisan optimize         # only if you cache config/routes in production
+```
+
+Verified against both SQLite and MySQL 8.0 with `ONLY_FULL_GROUP_BY` enabled, since the date and referrer-host expressions are driver-specific.
 
 ### 2026-04-06 - Security Update: Filament 5, Livewire 4, Shield 4
 
@@ -997,8 +1128,10 @@ Upgraded core dependencies to address a Livewire security vulnerability and an X
 - Spatie Permission 6.18.0 → 7.2.2
 - Tailwind CSS config migrated from JS to CSS-only (v4)
 
+> ⚠️ **This upgrade shipped with a bug.** The permission rename below was applied to the database and to `roles:setup`, but five policy files were left checking the old `::` names, silently hiding the API Keys, Groups and Notifications menus for all users. Fixed on 2026-08-02 — see [that entry](#2026-08-02---fix-admin-menu-items-hidden-since-the-filament-5-upgrade). If you are upgrading from 3.x, apply both changes together and verify every admin menu item appears afterwards.
+
 **Breaking changes for existing installations:**
-- Permission names changed from `::` separator to `_` (e.g., `view_api::key` → `view_api_key`). Run the rename command in the [deployment notes](#deployment-notes-for-filament-5-upgrade).
+- Permission names changed from `::` separator to `_` (e.g., `view_api::key` → `view_api_key`). Run the rename command in the [deployment notes](#deployment-notes-for-filament-5-upgrade). **Policies must be renamed to match** — the `$user->can('...')` strings in `app/Policies/` are not updated by the rename script or by `shield:generate`.
 - Shield config (`config/filament-shield.php`) completely rewritten for v4 format
 - `tailwind.config.js` removed — Tailwind v4 uses CSS-based config in `resources/css/app.css`
 - Filament assets must be republished: `php artisan filament:assets`
@@ -1052,7 +1185,15 @@ php artisan optimize:clear
 
 # 8. Delete hot file if it exists
 rm -f public/hot
+
+# 9. Verify every policy check matches a real permission
+#    Anything listed here is a check that will always deny (see the 2026-08-02 fix)
+comm -23 \
+  <(grep -rho "can('[^']*')" app/Policies/ | sed "s/can('\(.*\)')/\1/" | sort -u) \
+  <(php artisan tinker --execute 'echo \Spatie\Permission\Models\Permission::orderBy("name")->pluck("name")->implode("\n");' | grep -E "^[a-z]" | sort -u)
 ```
+
+**After deploying, log in and confirm every admin menu item is present** — API Keys, Groups, and Settings → Notifications are the ones most likely to disappear, since a permission mismatch hides a resource silently rather than erroring.
 
 ## Future Enhancements
 

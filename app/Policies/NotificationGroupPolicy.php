@@ -15,7 +15,7 @@ class NotificationGroupPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_notification::group');
+        return $user->can('view_any_notification_group');
     }
 
     /**
@@ -23,7 +23,7 @@ class NotificationGroupPolicy
      */
     public function view(User $user, NotificationGroup $notificationGroup): bool
     {
-        return $user->can('view_notification::group');
+        return $user->can('view_notification_group');
     }
 
     /**
@@ -31,7 +31,7 @@ class NotificationGroupPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_notification::group');
+        return $user->can('create_notification_group');
     }
 
     /**
@@ -39,7 +39,7 @@ class NotificationGroupPolicy
      */
     public function update(User $user, NotificationGroup $notificationGroup): bool
     {
-        return $user->can('update_notification::group');
+        return $user->can('update_notification_group');
     }
 
     /**
@@ -47,7 +47,7 @@ class NotificationGroupPolicy
      */
     public function delete(User $user, NotificationGroup $notificationGroup): bool
     {
-        return $user->can('delete_notification::group');
+        return $user->can('delete_notification_group');
     }
 
     /**
@@ -55,7 +55,7 @@ class NotificationGroupPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_notification::group');
+        return $user->can('delete_any_notification_group');
     }
 
     /**
@@ -63,7 +63,7 @@ class NotificationGroupPolicy
      */
     public function forceDelete(User $user, NotificationGroup $notificationGroup): bool
     {
-        return $user->can('force_delete_notification::group');
+        return $user->can('force_delete_notification_group');
     }
 
     /**
@@ -71,7 +71,7 @@ class NotificationGroupPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_notification::group');
+        return $user->can('force_delete_any_notification_group');
     }
 
     /**
@@ -79,7 +79,7 @@ class NotificationGroupPolicy
      */
     public function restore(User $user, NotificationGroup $notificationGroup): bool
     {
-        return $user->can('restore_notification::group');
+        return $user->can('restore_notification_group');
     }
 
     /**
@@ -87,7 +87,7 @@ class NotificationGroupPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_notification::group');
+        return $user->can('restore_any_notification_group');
     }
 
     /**
@@ -95,7 +95,7 @@ class NotificationGroupPolicy
      */
     public function replicate(User $user, NotificationGroup $notificationGroup): bool
     {
-        return $user->can('replicate_notification::group');
+        return $user->can('replicate_notification_group');
     }
 
     /**
@@ -103,6 +103,6 @@ class NotificationGroupPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_notification::group');
+        return $user->can('reorder_notification_group');
     }
 }

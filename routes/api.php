@@ -1,8 +1,14 @@
 <?php
 
+use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\LinkController;
 use App\Http\Controllers\Api\LinkGroupController;
 use Illuminate\Support\Facades\Route;
+
+// Key verification: any valid key, no specific permission required
+Route::middleware(['api.key'])->group(function () {
+    Route::get('/me', [AccountController::class, 'me']);
+});
 
 // Links API routes with permission-based middleware
 Route::middleware(['api.key:links:read'])->group(function () {

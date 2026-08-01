@@ -12,7 +12,7 @@ class ApiKeyMiddleware
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next, ?string $permission = null): Response
     {
@@ -55,6 +55,10 @@ class ApiKeyMiddleware
                 'message' => 'Insufficient permissions',
             ], 403);
         }
+
+        // Preserve the previous value before it is overwritten, so endpoints such as
+        // /api/me can report when the key was last used rather than "just now"
+        $request->attributes->set('api_key_previous_last_used_at', $keyRecord->last_used_at);
 
         // Update last used timestamp
         $keyRecord->update(['last_used_at' => now()]);

@@ -15,7 +15,7 @@ class NotificationTypePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_notification::rule');
+        return $user->can('view_any_notification_rule');
     }
 
     /**
@@ -23,7 +23,7 @@ class NotificationTypePolicy
      */
     public function view(User $user, NotificationType $notificationType): bool
     {
-        return $user->can('view_notification::rule');
+        return $user->can('view_notification_rule');
     }
 
     /**
@@ -31,7 +31,7 @@ class NotificationTypePolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_notification::rule');
+        return $user->can('create_notification_rule');
     }
 
     /**
@@ -39,7 +39,7 @@ class NotificationTypePolicy
      */
     public function update(User $user, NotificationType $notificationType): bool
     {
-        return $user->can('update_notification::rule');
+        return $user->can('update_notification_rule');
     }
 
     /**
@@ -47,7 +47,7 @@ class NotificationTypePolicy
      */
     public function delete(User $user, NotificationType $notificationType): bool
     {
-        return $user->can('delete_notification::rule');
+        return $user->can('delete_notification_rule');
     }
 
     /**
@@ -55,7 +55,7 @@ class NotificationTypePolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_notification::rule');
+        return $user->can('delete_any_notification_rule');
     }
 
     /**
@@ -63,7 +63,7 @@ class NotificationTypePolicy
      */
     public function forceDelete(User $user, NotificationType $notificationType): bool
     {
-        return $user->can('force_delete_notification::rule');
+        return $user->can('force_delete_notification_rule');
     }
 
     /**
@@ -71,7 +71,7 @@ class NotificationTypePolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_notification::rule');
+        return $user->can('force_delete_any_notification_rule');
     }
 
     /**
@@ -79,7 +79,7 @@ class NotificationTypePolicy
      */
     public function restore(User $user, NotificationType $notificationType): bool
     {
-        return $user->can('restore_notification::rule');
+        return $user->can('restore_notification_rule');
     }
 
     /**
@@ -87,7 +87,7 @@ class NotificationTypePolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_notification::rule');
+        return $user->can('restore_any_notification_rule');
     }
 
     /**
@@ -95,7 +95,7 @@ class NotificationTypePolicy
      */
     public function replicate(User $user, NotificationType $notificationType): bool
     {
-        return $user->can('replicate_notification::rule');
+        return $user->can('replicate_notification_rule');
     }
 
     /**
@@ -103,6 +103,6 @@ class NotificationTypePolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_notification::rule');
+        return $user->can('reorder_notification_rule');
     }
 }

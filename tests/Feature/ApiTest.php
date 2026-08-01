@@ -154,6 +154,141 @@ class ApiTest extends TestCase
             ]);
     }
 
+    public function test_api_list_returns_click_counts_from_the_link_column(): void
+    {
+        Link::factory()->create([
+            'short_code' => 'counted',
+            'created_by' => $this->user->id,
+            'click_count' => 42,
+        ]);
+
+        $response = $this->getJson('/api/links', [
+            'Authorization' => 'Bearer '.$this->plainTextKey,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.0.click_count', 42)
+            ->assertJsonMissingPath('data.0.clicks');
+    }
+
+    public function test_api_list_can_be_searched(): void
+    {
+        Link::factory()->create([
+            'short_code' => 'alpha',
+            'original_url' => 'https://example.com/holiday-rentals',
+            'created_by' => $this->user->id,
+        ]);
+
+        Link::factory()->create([
+            'short_code' => 'beta',
+            'custom_slug' => 'summer-promo',
+            'original_url' => 'https://example.com/other',
+            'created_by' => $this->user->id,
+        ]);
+
+        Link::factory()->create([
+            'short_code' => 'gamma',
+            'original_url' => 'https://example.com/unrelated',
+            'created_by' => $this->user->id,
+        ]);
+
+        // Matches original_url
+        $response = $this->getJson('/api/links?search=holiday', [
+            'Authorization' => 'Bearer '.$this->plainTextKey,
+        ]);
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.short_code', 'alpha');
+
+        // Matches custom_slug
+        $response = $this->getJson('/api/links?search=summer', [
+            'Authorization' => 'Bearer '.$this->plainTextKey,
+        ]);
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.short_code', 'beta');
+
+        // Matches short_code
+        $response = $this->getJson('/api/links?search=gam', [
+            'Authorization' => 'Bearer '.$this->plainTextKey,
+        ]);
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.short_code', 'gamma');
+    }
+
+    public function test_api_list_search_stays_scoped_to_the_key_owner(): void
+    {
+        $otherUser = User::factory()->create();
+
+        Link::factory()->create([
+            'short_code' => 'theirs',
+            'original_url' => 'https://example.com/holiday-rentals',
+            'created_by' => $otherUser->id,
+        ]);
+
+        $this->getJson('/api/links?search=holiday', [
+            'Authorization' => 'Bearer '.$this->plainTextKey,
+        ])->assertStatus(200)->assertJsonCount(0, 'data');
+    }
+
+    public function test_api_list_can_be_sorted_by_click_count(): void
+    {
+        Link::factory()->create([
+            'short_code' => 'low',
+            'created_by' => $this->user->id,
+            'click_count' => 5,
+        ]);
+
+        Link::factory()->create([
+            'short_code' => 'high',
+            'created_by' => $this->user->id,
+            'click_count' => 90,
+        ]);
+
+        Link::factory()->create([
+            'short_code' => 'mid',
+            'created_by' => $this->user->id,
+            'click_count' => 40,
+        ]);
+
+        $response = $this->getJson('/api/links?sort=click_count', [
+            'Authorization' => 'Bearer '.$this->plainTextKey,
+        ]);
+        $response->assertStatus(200)
+            ->assertJsonPath('data.0.short_code', 'high')
+            ->assertJsonPath('data.2.short_code', 'low');
+
+        $response = $this->getJson('/api/links?sort=click_count&direction=asc', [
+            'Authorization' => 'Bearer '.$this->plainTextKey,
+        ]);
+        $response->assertStatus(200)
+            ->assertJsonPath('data.0.short_code', 'low')
+            ->assertJsonPath('data.2.short_code', 'high');
+    }
+
+    public function test_api_list_ignores_an_unknown_sort_column(): void
+    {
+        Link::factory()->create([
+            'short_code' => 'older',
+            'created_by' => $this->user->id,
+            'created_at' => now()->subDay(),
+        ]);
+
+        Link::factory()->create([
+            'short_code' => 'newer',
+            'created_by' => $this->user->id,
+            'created_at' => now(),
+        ]);
+
+        // Falls back to created_at desc rather than erroring or injecting the column
+        $this->getJson('/api/links?sort=password&direction=sideways', [
+            'Authorization' => 'Bearer '.$this->plainTextKey,
+        ])
+            ->assertStatus(200)
+            ->assertJsonPath('data.0.short_code', 'newer');
+    }
+
     public function test_api_enforces_permissions(): void
     {
         // Create API key with only read permissions

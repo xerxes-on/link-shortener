@@ -15,7 +15,7 @@ class NotificationChannelPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_notification::channel');
+        return $user->can('view_any_notification_channel');
     }
 
     /**
@@ -23,7 +23,7 @@ class NotificationChannelPolicy
      */
     public function view(User $user, NotificationChannel $notificationChannel): bool
     {
-        return $user->can('view_notification::channel');
+        return $user->can('view_notification_channel');
     }
 
     /**
@@ -31,7 +31,7 @@ class NotificationChannelPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_notification::channel');
+        return $user->can('create_notification_channel');
     }
 
     /**
@@ -39,7 +39,7 @@ class NotificationChannelPolicy
      */
     public function update(User $user, NotificationChannel $notificationChannel): bool
     {
-        return $user->can('update_notification::channel');
+        return $user->can('update_notification_channel');
     }
 
     /**
@@ -47,7 +47,7 @@ class NotificationChannelPolicy
      */
     public function delete(User $user, NotificationChannel $notificationChannel): bool
     {
-        return $user->can('delete_notification::channel');
+        return $user->can('delete_notification_channel');
     }
 
     /**
@@ -55,7 +55,7 @@ class NotificationChannelPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_notification::channel');
+        return $user->can('delete_any_notification_channel');
     }
 
     /**
@@ -63,7 +63,7 @@ class NotificationChannelPolicy
      */
     public function forceDelete(User $user, NotificationChannel $notificationChannel): bool
     {
-        return $user->can('force_delete_notification::channel');
+        return $user->can('force_delete_notification_channel');
     }
 
     /**
@@ -71,7 +71,7 @@ class NotificationChannelPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_notification::channel');
+        return $user->can('force_delete_any_notification_channel');
     }
 
     /**
@@ -79,7 +79,7 @@ class NotificationChannelPolicy
      */
     public function restore(User $user, NotificationChannel $notificationChannel): bool
     {
-        return $user->can('restore_notification::channel');
+        return $user->can('restore_notification_channel');
     }
 
     /**
@@ -87,7 +87,7 @@ class NotificationChannelPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_notification::channel');
+        return $user->can('restore_any_notification_channel');
     }
 
     /**
@@ -95,7 +95,7 @@ class NotificationChannelPolicy
      */
     public function replicate(User $user, NotificationChannel $notificationChannel): bool
     {
-        return $user->can('replicate_notification::channel');
+        return $user->can('replicate_notification_channel');
     }
 
     /**
@@ -103,6 +103,6 @@ class NotificationChannelPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_notification::channel');
+        return $user->can('reorder_notification_channel');
     }
 }

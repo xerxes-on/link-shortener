@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Link;
 use App\Models\LinkGroup;
 use App\Services\LinkShortenerService;
+use App\Services\LinkStatsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -25,12 +26,10 @@ class LinkController extends Controller
     {
         $user = auth()->user();
 
+        // Click totals come from the denormalised links.click_count column, which is
+        // maintained on redirect - no per-link aggregate over the clicks table needed
         $query = Link::where('created_by', $user->id)
-            ->with(['group:id,name,color', 'clicks' => function ($query) {
-                $query->select('link_id')
-                    ->selectRaw('COUNT(*) as total_clicks')
-                    ->groupBy('link_id');
-            }]);
+            ->with('group:id,name,color');
 
         // Apply filters
         if ($request->has('group_id')) {
@@ -41,9 +40,28 @@ class LinkController extends Controller
             $query->where('is_active', $request->boolean('is_active'));
         }
 
+        if ($request->filled('search') && is_string($request->get('search'))) {
+            $search = '%'.$request->get('search').'%';
+
+            $query->where(function ($query) use ($search) {
+                $query->where('short_code', 'like', $search)
+                    ->orWhere('custom_slug', 'like', $search)
+                    ->orWhere('original_url', 'like', $search);
+            });
+        }
+
+        // Sorting - anything outside the whitelist falls back to the default
+        $sort = in_array($request->get('sort'), ['created_at', 'click_count'], true)
+            ? $request->get('sort')
+            : 'created_at';
+        $directionInput = $request->get('direction');
+        $direction = is_string($directionInput) && strtolower($directionInput) === 'asc' ? 'asc' : 'desc';
+
         // Pagination
         $perPage = min($request->get('per_page', 15), 100);
-        $links = $query->orderBy('created_at', 'desc')->paginate($perPage);
+        $links = $query->orderBy($sort, $direction)
+            ->orderBy('id', 'desc')
+            ->paginate($perPage);
 
         return response()->json([
             'data' => $links->items(),
@@ -275,15 +293,14 @@ class LinkController extends Controller
 
     /**
      * Get link statistics
+     *
+     * Accepts a `days` query parameter (default 30, clamped to 1-365) controlling
+     * the width of the daily time series.
      */
-    public function stats(string $id)
+    public function stats(Request $request, string $id, LinkStatsService $linkStats)
     {
         $link = Link::where('id', $id)
             ->where('created_by', auth()->id())
-            ->with(['clicks' => function ($query) {
-                $query->select('link_id', 'country', 'city', 'clicked_at')
-                    ->orderBy('clicked_at', 'desc');
-            }])
             ->first();
 
         if (! $link) {
@@ -293,35 +310,15 @@ class LinkController extends Controller
             ], 404);
         }
 
-        // Get click statistics
-        $totalClicks = $link->clicks->count();
-        $todayClicks = $link->clicks->where('clicked_at', '>=', today())->count();
-        $thisWeekClicks = $link->clicks->where('clicked_at', '>=', now()->startOfWeek())->count();
-
-        // Get top countries
-        $topCountries = $link->clicks
-            ->whereNotNull('country')
-            ->groupBy('country')
-            ->map(function ($clicks) {
-                return [
-                    'country' => $clicks->first()->country,
-                    'clicks' => $clicks->count(),
-                ];
-            })
-            ->sortByDesc('clicks')
-            ->take(5)
-            ->values();
+        $days = (int) $request->get('days', LinkStatsService::DEFAULT_DAYS);
 
         return response()->json([
             'data' => [
-                'link' => $link->only(['id', 'short_code', 'original_url', 'click_count']),
+                'link' => $link->only([
+                    'id', 'short_code', 'original_url', 'click_count', 'is_active', 'created_at',
+                ]),
                 'short_url' => url($link->short_code),
-                'stats' => [
-                    'total_clicks' => $totalClicks,
-                    'today_clicks' => $todayClicks,
-                    'this_week_clicks' => $thisWeekClicks,
-                    'top_countries' => $topCountries,
-                ],
+                'stats' => $linkStats->forLink($link, $days),
             ],
         ]);
     }
