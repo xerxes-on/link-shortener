@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ApiKeyMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,8 +13,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->trustProxies(at: '100.64.0.39');
+
         $middleware->alias([
-            'api.key' => \App\Http\Middleware\ApiKeyMiddleware::class,
+            'api.key' => ApiKeyMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
