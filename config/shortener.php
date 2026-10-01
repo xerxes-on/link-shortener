@@ -60,6 +60,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Mobile App Handoff
+    |--------------------------------------------------------------------------
+    |
+    | AppMetrica app-to-app links embed the UFarmer universal link in their
+    | path. Short links unwrap supported routes so mobile operating systems can
+    | open the exact in-app destination after a cross-domain redirect.
+    |
+    */
+    'app_handoff' => [
+        'universal_link_host' => env('APP_HANDOFF_UNIVERSAL_LINK_HOST', 'app.ufarmer.uz'),
+        'scheme' => env('APP_HANDOFF_SCHEME', 'ufarmer'),
+        'android_package' => env('APP_HANDOFF_ANDROID_PACKAGE', 'uz.ufarmer.app'),
+        'routes' => [
+            'p' => 'market/product',
+            's' => 'shop',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Analytics
     |--------------------------------------------------------------------------
     |

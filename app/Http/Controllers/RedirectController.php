@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\LinkClicked;
 use App\Events\LinkNotFound;
 use App\Models\Link;
+use App\Services\AppDeepLinkHandoff;
 use App\Services\ClickTrackingService;
 use App\Services\GeolocationService;
 use Illuminate\Http\Request;
@@ -13,7 +14,13 @@ use Illuminate\Support\Facades\DB;
 
 class RedirectController extends Controller
 {
-    public function redirect(string $shortCode, GeolocationService $geoService, ClickTrackingService $clickTracking)
+    public function redirect(
+        string $shortCode,
+        Request $request,
+        GeolocationService $geoService,
+        ClickTrackingService $clickTracking,
+        AppDeepLinkHandoff $appDeepLinkHandoff,
+    )
     {
         // Cache the link data, but not the redirect decision
         $cacheKey = "link_data_{$shortCode}";
@@ -169,6 +176,15 @@ class RedirectController extends Controller
         $trackingMethod = config('shortener.analytics.click_tracking_method', 'queue');
         if ($link->click_limit !== null && $trackingMethod === 'queue') {
             DB::table('links')->where('id', $link->id)->increment('click_count');
+        }
+
+        $handoffUrl = $appDeepLinkHandoff->resolve($targetUrl, $request->userAgent());
+
+        if ($handoffUrl !== null) {
+            return redirect()->away($handoffUrl, 302)->withHeaders([
+                'Cache-Control' => 'no-store, private',
+                'Vary' => 'User-Agent',
+            ]);
         }
 
         return redirect($targetUrl, $link->redirect_type);
